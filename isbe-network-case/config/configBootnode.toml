@@ -1,0 +1,15 @@
+# Node Information
+data-path="/opt/besu/data"
+genesis-file="/opt/besu/config/genesis.json"
+logging="INFO"
+ 
+p2p-enabled=true
+p2p-port=30303
+rpc-http-enabled=true
+rpc-http-api=["ETH","NET","QBFT","ADMIN"]
+rpc-http-cors-origins=["all"]
+rpc-http-host="127.0.0.1"
+rpc-http-port=8545 
+
+host-allowlist=["*"]
+metrics-port=9545

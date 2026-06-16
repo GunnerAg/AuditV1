@@ -1,0 +1,6 @@
+{
+  "algorithm": "qbft",
+  "nodes": [
+    {"name": "bootnode", "client": "besu", "rpcUrl": "http://127.0.0.1:8545", "privateTxUrl": ""}, {"name": "node2", "client": "besu", "rpcUrl": "http://127.0.0.1:8546", "privateTxUrl": ""}, {"name": "node3", "client": "besu", "rpcUrl": "http://127.0.0.1:8547", "privateTxUrl": ""}, {"name": "node4", "client": "besu", "rpcUrl": "http://127.0.0.1:8548", "privateTxUrl": ""}
+  ]
+}

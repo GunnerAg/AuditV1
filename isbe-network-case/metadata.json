@@ -1,0 +1,9 @@
+{
+  "exportedAt": "2025-11-26T14:57:11Z",
+  "chainId": 2222,
+  "nodeCount": 4,
+  "besuVersion": "latest",
+  "blockPeriodSeconds": 2,
+  "epochLength": 50,
+  "ipBase": "172.16.240"
+}

@@ -1,0 +1,143 @@
+#!/bin/bash
+
+# Reinicia la red QBFT usando los datos ya existentes en QBFT-Network
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Comprueba que Docker estÃ¡ instalado y funcionando
+if ! command -v docker &>/dev/null; then
+  echo "Docker could not be found. Please install Docker and try again."
+  exit 1
+fi
+if ! docker info &>/dev/null; then
+  echo "Docker is not running. Please start Docker and try again."
+  exit 1
+fi
+
+# carga parÃ¡metros desde config/qbftConfigFile.json
+if [ ! -f "$SCRIPT_DIR/config/qbftConfigFile.json" ]; then
+  echo "Missing config/qbftConfigFile.json. Run the installer first or place the file here."
+  exit 1
+fi
+
+besuVersion=$(jq -r '.blockchain.nodes.besuVersion // "latest"' "$SCRIPT_DIR/config/qbftConfigFile.json")
+num_nodes=$(jq -r '.blockchain.nodes.count // 4' "$SCRIPT_DIR/config/qbftConfigFile.json")
+ip=$(jq -r '.blockchain.nodes.ip // "172.16.240"' "$SCRIPT_DIR/config/qbftConfigFile.json")
+
+
+echo "Deteniendo y eliminando contenedores previos (si existen)..."
+docker ps -a --filter "label=project=besu" -q | xargs -r docker stop || true
+docker ps -a --filter "label=project=besu" -q | xargs -r docker rm || true
+
+# Eliminar red antigua y crear red nueva con la subred configurada
+if docker network inspect besu-network >/dev/null 2>&1; then
+  echo "Eliminando la red Docker 'besu-network' existente..."
+  docker network rm besu-network >/dev/null 2>&1 || true
+fi
+
+echo "Creando la red Docker 'besu-network' con subnet ${ip}.0/24"
+if ! docker network inspect besu-network >/dev/null 2>&1; then
+  if docker network create --driver=bridge --subnet=${ip}.0/24 besu-network >/dev/null 2>&1; then
+    echo "Red 'besu-network' creada con subnet ${ip}.0/24"
+  else
+    echo "No se pudo crear la red con la subred ${ip}.0/24; intentando crear sin subnet..."
+    if docker network create --driver=bridge besu-network >/dev/null 2>&1; then
+      echo "Red 'besu-network' creada sin subnet explÃ­cita"
+    else
+      echo "Error: no se pudo crear la red Docker 'besu-network'. Redes Docker existentes:" 
+      docker network ls
+      exit 1
+    fi
+  fi
+else
+  echo "Red 'besu-network' ya existe."
+fi
+
+# Asegurarse de que existe QBFT-Network y que Node-1 tiene datos
+if [ ! -d "$SCRIPT_DIR/QBFT-Network" ]; then
+  echo "No se encontrÃ³ 'QBFT-Network' en el repositorio. Debe contener las carpetas Node-1..Node-N con los datos generados anteriormente."
+  exit 1
+fi
+if [ ! -d "$SCRIPT_DIR/QBFT-Network/Node-1/data" ]; then
+  echo "No se encontrÃ³ 'QBFT-Network/Node-1/data'. AsegÃºrese de que los datos de los nodos estÃ¡n presentes."
+  exit 1
+fi
+
+# Asegurar que no existe contenedor con nombre bootnode
+if docker ps -a --format '{{.Names}}' | grep -q '^bootnode$'; then
+  docker stop bootnode >/dev/null 2>&1 || true
+  docker rm bootnode >/dev/null 2>&1 || true
+fi
+
+echo "Iniciando bootnode..."
+
+# Comprobar si la red 'besu-network' tiene una subred configurada
+network_subnet=$(docker network inspect besu-network | jq -r '.[0].IPAM.Config[0].Subnet // empty' 2>/dev/null || true)
+ip_flag=""
+desired_ip="${ip}.30"
+if [[ -n "$network_subnet" ]]; then
+  echo "Red 'besu-network' tiene subred configurada: $network_subnet. Comprobando si la IP deseada $desired_ip pertenece a la subred..."
+  # Usar Python para comprobar pertenencia IP a subred (mÃ¡s fiable que manipular en bash)
+  if command -v python3 >/dev/null 2>&1; then
+    if python3 -c "import ipaddress,sys; sys.exit(0) if ipaddress.ip_address('$desired_ip') in ipaddress.ip_network('$network_subnet') else sys.exit(1)"; then
+      echo "La IP $desired_ip estÃ¡ dentro de $network_subnet. Se usarÃ¡ IP estÃ¡tica para el bootnode."
+      ip_flag="--ip $desired_ip"
+    else
+      echo "La IP $desired_ip NO pertenece a $network_subnet. No se usarÃ¡ --ip; Docker asignarÃ¡ una IP dentro de la subred existente."
+      ip_flag=""
+    fi
+  else
+    echo "Aviso: python3 no encontrado. No puedo comprobar la pertenencia de IP a la subred. No se usarÃ¡ --ip por seguridad."
+    ip_flag=""
+  fi
+else
+  echo "Red 'besu-network' no tiene una subred configurada. Docker asignarÃ¡ la IP automÃ¡ticamente."
+fi
+
+docker run -d --name bootnode \
+  -v "$SCRIPT_DIR/config:/opt/besu/config" \
+  -v "$SCRIPT_DIR/QBFT-Network/Node-1/data:/opt/besu/data" \
+  -v "$SCRIPT_DIR/plugins:/opt/besu/plugins" \
+  -p 30303:30303 \
+  -p 8545:8545 \
+  -p 9545:9545 \
+  --label project=besu \
+  --network besu-network \
+  $ip_flag \
+  hyperledger/besu:$besuVersion \
+  --config-file=/opt/besu/config/configBootnode.toml >/dev/null
+
+echo "Esperando a que el bootnode arranque..."
+sleep 10
+
+# Determinar la IP del bootnode: si usamos IP estÃ¡tica, la conocemos; si no, la consultamos al contenedor
+if [[ -n "$ip_flag" ]]; then
+  bootnode_ip="${ip}.30"
+else
+  bootnode_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bootnode 2>/dev/null || true)
+  if [[ -z "$bootnode_ip" ]]; then
+    echo "Error: no se pudo determinar la IP del contenedor 'bootnode'. Comprueba 'docker ps' y los logs del contenedor."
+    docker ps -a --filter "name=bootnode"
+    exit 1
+  fi
+fi
+
+# Obtener enode y preparar el fichero de validadores (getEnode.sh espera la IP del bootnode)
+if [ -x "$SCRIPT_DIR/getEnode.sh" ]; then
+  echo "Obteniendo enode desde el bootnode ($bootnode_ip)..."
+  bash "$SCRIPT_DIR/getEnode.sh" $bootnode_ip
+else
+  echo "Advertencia: getEnode.sh no es ejecutable o no existe en el repo. Saltando la obtenciÃ³n automÃ¡tica del enode."
+fi
+
+# Lanzar nodos validadores usando el script existente
+if [ -x "$SCRIPT_DIR/createValidatorNodes.sh" ]; then
+  echo "Creando/arrancando nodos validadores (usando createValidatorNodes.sh)..."
+  bash "$SCRIPT_DIR/createValidatorNodes.sh" "$besuVersion" "$num_nodes" "$ip"
+else
+  echo "Error: createValidatorNodes.sh no es ejecutable o no existe. No se pueden arrancar los validadores automÃ¡ticamente."
+  exit 1
+fi
+
+echo "Red reiniciada. Comprueba 'docker ps' y los logs de los contenedores si es necesario."
