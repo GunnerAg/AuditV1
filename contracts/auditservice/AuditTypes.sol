@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 /// @title CTB Audit Service V1 Types
 /// @notice Shared types for schemas, algorithms, keys and audit anchoring.
-/// @dev Keep these structs append-only across upgrades when stored in ProjectStorage.
+/// @dev Keep these structs append-only across upgrades when stored in AuditServiceStorage.
 library AuditTypes {
     /// @notice Registered business schema/template.
     /// @dev The contract does not interpret the schema body. It only stores a commitment.
@@ -16,10 +16,10 @@ library AuditTypes {
     }
 
     /// @notice Registered cryptographic verification algorithm.
-    /// @dev `verifier` is an external contract implementing ISignatureVerifier.
+    /// @dev Verification is performed natively inside AuditServiceInternal.
+    ///      Supported algorithm IDs are declared in constants.sol.
     struct Algorithm {
         bytes32 algorithmId;
-        address verifier;
         bool enabled;
     }
 

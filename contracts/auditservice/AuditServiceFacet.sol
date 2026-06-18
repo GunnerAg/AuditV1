@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import {Project} from "./Project.sol";
-import {IEIP2535Introspection} from "@red-isbe/isbe-contracts/contracts/proxies/eip2535/interfaces/IEIP2535Introspection.sol";
-import {_PROJECT_RESOLVER_KEY} from "../constants/constants.sol";
+import {AuditService} from './AuditService.sol';
+import {
+    IEIP2535Introspection
+} from '@red-isbe/isbe-contracts/contracts/proxies/eip2535/interfaces/IEIP2535Introspection.sol';
+import {_AUDIT_SERVICE_RESOLVER_KEY} from '../constants/constants.sol';
 
 /// @title CTB Audit Service V1 Facet
 /// @notice Diamond facet for CTB Audit Service V1.
-contract ProjectFacet is Project, IEIP2535Introspection {
+contract AuditServiceFacet is AuditService, IEIP2535Introspection {
     function interfacesIntrospection()
         external
         pure
@@ -22,7 +24,7 @@ contract ProjectFacet is Project, IEIP2535Introspection {
         override
         returns (bytes32 businessId_)
     {
-        businessId_ = _PROJECT_RESOLVER_KEY;
+        businessId_ = _AUDIT_SERVICE_RESOLVER_KEY;
     }
 
     function selectorsIntrospection()
@@ -34,17 +36,24 @@ contract ProjectFacet is Project, IEIP2535Introspection {
         uint256 selectorsLength = 23;
         selectors_ = new bytes4[](selectorsLength);
 
+        // Schema registry
         selectors_[--selectorsLength] = this.registerSchema.selector;
         selectors_[--selectorsLength] = this.setSchemaEnabled.selector;
         selectors_[--selectorsLength] = this.getSchema.selector;
+
+        // Algorithm registry
         selectors_[--selectorsLength] = this.registerAlgorithm.selector;
         selectors_[--selectorsLength] = this.setAlgorithmEnabled.selector;
         selectors_[--selectorsLength] = this.getAlgorithm.selector;
+
+        // Key registry
         selectors_[--selectorsLength] = this.registerKey.selector;
         selectors_[--selectorsLength] = this.revokeKey.selector;
         selectors_[--selectorsLength] = this.getKey.selector;
         selectors_[--selectorsLength] = this.isKeyActive.selector;
         selectors_[--selectorsLength] = this.isKeyActiveAt.selector;
+
+        // Audit anchoring
         selectors_[--selectorsLength] = this.anchor.selector;
         selectors_[--selectorsLength] = this.exists.selector;
         selectors_[--selectorsLength] = this.getAnchor.selector;
@@ -52,9 +61,13 @@ contract ProjectFacet is Project, IEIP2535Introspection {
         selectors_[--selectorsLength] = this.getSigner.selector;
         selectors_[--selectorsLength] = this.hasSigner.selector;
         selectors_[--selectorsLength] = this.getSignerCount.selector;
+
+        // Verification
         selectors_[--selectorsLength] = this.verifySignature.selector;
         selectors_[--selectorsLength] = this.verifySignatures.selector;
         selectors_[--selectorsLength] = this.hashEnvelope.selector;
+
+        // Metadata
         selectors_[--selectorsLength] = this.eip712Domain.selector;
         selectors_[--selectorsLength] = this.version.selector;
     }

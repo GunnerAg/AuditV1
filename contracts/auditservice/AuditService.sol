@@ -1,23 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import {AuditTypes} from "./AuditTypes.sol";
-import {IProject} from "./IProject.sol";
-import {ProjectInternal} from "./ProjectInternal.sol";
-
+import {AuditTypes} from './AuditTypes.sol';
+import {IAuditService} from './IAuditService.sol';
+import {AuditServiceInternal} from './AuditServiceInternal.sol';
 import {
-    _PROJECT_SCHEMA_MANAGER_ROLE,
-    _PROJECT_ALGORITHM_MANAGER_ROLE,
-    _PROJECT_KEY_MANAGER_ROLE,
-    _PROJECT_KEY_REVOKER_ROLE,
-    _PROJECT_ANCHOR_ROLE,
-    _PROJECT_EIP712_VERSION
-} from "../constants/constants.sol";
+    _AUDIT_SERVICE_SCHEMA_MANAGER_ROLE,
+    _AUDIT_SERVICE_ALGORITHM_MANAGER_ROLE,
+    _AUDIT_SERVICE_KEY_MANAGER_ROLE,
+    _AUDIT_SERVICE_KEY_REVOKER_ROLE,
+    _AUDIT_SERVICE_ANCHOR_ROLE,
+    _AUDIT_SERVICE_EIP712_VERSION
+} from '../constants/constants.sol';
 
 /// @title CTB Audit Service V1
 /// @notice External function layer for schema registry, algorithm registry, key registry and audit anchoring.
-/// @dev This contract is intended to be used as an ISBE Diamond facet implementation.
-abstract contract Project is IProject, ProjectInternal {
+/// @dev Intended to be used as an ISBE Diamond facet implementation.
+abstract contract AuditService is IAuditService, AuditServiceInternal {
     /*//////////////////////////////////////////////////////////////
                             SCHEMA REGISTRY
     //////////////////////////////////////////////////////////////*/
@@ -27,7 +26,7 @@ abstract contract Project is IProject, ProjectInternal {
         bytes32 schemaVersion,
         bytes32 schemaHash,
         bytes32 eip712TypeHash
-    ) external override whenNotPaused onlyRole(_PROJECT_SCHEMA_MANAGER_ROLE) {
+    ) external override whenNotPaused onlyRole(_AUDIT_SERVICE_SCHEMA_MANAGER_ROLE) {
         _registerSchema(schemaId, schemaVersion, schemaHash, eip712TypeHash);
     }
 
@@ -35,7 +34,7 @@ abstract contract Project is IProject, ProjectInternal {
         bytes32 schemaId,
         bytes32 schemaVersion,
         bool enabled
-    ) external override whenNotPaused onlyRole(_PROJECT_SCHEMA_MANAGER_ROLE) {
+    ) external override whenNotPaused onlyRole(_AUDIT_SERVICE_SCHEMA_MANAGER_ROLE) {
         _setSchemaEnabled(schemaId, schemaVersion, enabled);
     }
 
@@ -51,26 +50,15 @@ abstract contract Project is IProject, ProjectInternal {
     //////////////////////////////////////////////////////////////*/
 
     function registerAlgorithm(
-        bytes32 algorithmId,
-        address verifier
-    )
-        external
-        override
-        whenNotPaused
-        onlyRole(_PROJECT_ALGORITHM_MANAGER_ROLE)
-    {
-        _registerAlgorithm(algorithmId, verifier);
+        bytes32 algorithmId
+    ) external override whenNotPaused onlyRole(_AUDIT_SERVICE_ALGORITHM_MANAGER_ROLE) {
+        _registerAlgorithm(algorithmId);
     }
 
     function setAlgorithmEnabled(
         bytes32 algorithmId,
         bool enabled
-    )
-        external
-        override
-        whenNotPaused
-        onlyRole(_PROJECT_ALGORITHM_MANAGER_ROLE)
-    {
+    ) external override whenNotPaused onlyRole(_AUDIT_SERVICE_ALGORITHM_MANAGER_ROLE) {
         _setAlgorithmEnabled(algorithmId, enabled);
     }
 
@@ -90,13 +78,13 @@ abstract contract Project is IProject, ProjectInternal {
         bytes calldata publicKey,
         bytes32 tenantId,
         uint64 expiresAt
-    ) external override whenNotPaused onlyRole(_PROJECT_KEY_MANAGER_ROLE) {
+    ) external override whenNotPaused onlyRole(_AUDIT_SERVICE_KEY_MANAGER_ROLE) {
         _registerKey(keyId, algorithmId, publicKey, tenantId, expiresAt);
     }
 
     function revokeKey(
         bytes32 keyId
-    ) external override whenNotPaused onlyRole(_PROJECT_KEY_REVOKER_ROLE) {
+    ) external override whenNotPaused onlyRole(_AUDIT_SERVICE_KEY_REVOKER_ROLE) {
         _revokeKey(keyId);
     }
 
@@ -106,9 +94,7 @@ abstract contract Project is IProject, ProjectInternal {
         return _getKey(keyId);
     }
 
-    function isKeyActive(
-        bytes32 keyId
-    ) external view override returns (bool active) {
+    function isKeyActive(bytes32 keyId) external view override returns (bool active) {
         return _isKeyActive(keyId);
     }
 
@@ -126,13 +112,11 @@ abstract contract Project is IProject, ProjectInternal {
     function anchor(
         AuditTypes.AuditEnvelope calldata envelope,
         AuditTypes.SignatureInput[] calldata signatures
-    ) external override whenNotPaused onlyRole(_PROJECT_ANCHOR_ROLE) {
+    ) external override whenNotPaused onlyRole(_AUDIT_SERVICE_ANCHOR_ROLE) {
         _anchor(envelope, signatures);
     }
 
-    function exists(
-        bytes32 eventHash
-    ) external view override returns (bool exists_) {
+    function exists(bytes32 eventHash) external view override returns (bool exists_) {
         return _exists(eventHash);
     }
 
@@ -144,12 +128,7 @@ abstract contract Project is IProject, ProjectInternal {
 
     function getSigners(
         bytes32 eventHash
-    )
-        external
-        view
-        override
-        returns (AuditTypes.SignerRecord[] memory signers)
-    {
+    ) external view override returns (AuditTypes.SignerRecord[] memory signers) {
         return _getSigners(eventHash);
     }
 
@@ -167,9 +146,7 @@ abstract contract Project is IProject, ProjectInternal {
         return _hasSigner(eventHash, keyId);
     }
 
-    function getSignerCount(
-        bytes32 eventHash
-    ) external view override returns (uint256 count) {
+    function getSignerCount(bytes32 eventHash) external view override returns (uint256 count) {
         return _getSignerCount(eventHash);
     }
 
@@ -215,22 +192,6 @@ abstract contract Project is IProject, ProjectInternal {
     }
 
     function version() external pure override returns (string memory) {
-        return _PROJECT_EIP712_VERSION;
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                            ISBE INTROSPECTION
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice Declares the interfaces implemented by this project facet for ISBE introspection.
-    function _implementedInterfaces()
-        internal
-        pure
-        virtual
-        override
-        returns (bytes4[] memory interfaces_)
-    {
-        interfaces_ = new bytes4[](1);
-        interfaces_[0] = type(IProject).interfaceId;
+        return _AUDIT_SERVICE_EIP712_VERSION;
     }
 }

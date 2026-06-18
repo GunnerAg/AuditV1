@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import {AuditTypes} from "./AuditTypes.sol";
+import {AuditTypes} from './AuditTypes.sol';
 
 /// @title CTB Audit Service V1 Interface
 /// @notice Public API for schema registration, algorithm registration, key management and audit anchoring.
-interface IProject {
+interface IAuditService {
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -34,11 +34,7 @@ interface IProject {
 
     /// @notice Emitted when a new verification algorithm is registered.
     /// @param algorithmId Logical identifier of the algorithm.
-    /// @param verifier Address of the external ISignatureVerifier implementation.
-    event AlgorithmRegistered(
-        bytes32 indexed algorithmId,
-        address indexed verifier
-    );
+    event AlgorithmRegistered(bytes32 indexed algorithmId);
 
     /// @notice Emitted when the enabled flag of a registered algorithm changes.
     /// @param algorithmId Logical identifier of the algorithm.
@@ -121,8 +117,8 @@ interface IProject {
 
     /// @notice Thrown when an algorithmId argument is zero.
     error InvalidAlgorithmId();
-    /// @notice Thrown when a verifier address argument is the zero address.
-    error InvalidVerifierAddress();
+    /// @notice Thrown when the algorithmId is not natively supported by this contract version.
+    error UnsupportedAlgorithm(bytes32 algorithmId);
     /// @notice Thrown when an algorithm is not registered.
     error AlgorithmNotRegistered(bytes32 algorithmId);
     /// @notice Thrown when registering an algorithm that already exists.
@@ -143,9 +139,6 @@ interface IProject {
     /// @notice Thrown when a key is not active at the relevant timestamp.
     error KeyNotActive(bytes32 keyId);
     /// @notice Thrown when a signing key's tenant does not match the envelope's tenant.
-    /// @param keyId Key whose tenant was mismatched.
-    /// @param expectedTenantId Tenant expected by the envelope.
-    /// @param actualTenantId Tenant the key is actually bound to.
     error KeyTenantMismatch(
         bytes32 keyId,
         bytes32 expectedTenantId,
@@ -216,10 +209,12 @@ interface IProject {
                           ALGORITHM REGISTRY
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Registers a verification algorithm. Newly registered algorithms are enabled.
+    /// @notice Registers a verification algorithm.
+    /// @dev Only algorithm IDs natively supported by this contract version are accepted.
+    ///      See _AUDIT_SERVICE_ECDSA_ALGORITHM_ID in constants.sol.
+    ///      Newly registered algorithms are enabled.
     /// @param algorithmId Logical identifier of the algorithm.
-    /// @param verifier Address of the external ISignatureVerifier implementation.
-    function registerAlgorithm(bytes32 algorithmId, address verifier) external;
+    function registerAlgorithm(bytes32 algorithmId) external;
 
     /// @notice Enables or disables a previously registered algorithm.
     /// @param algorithmId Logical identifier of the algorithm to toggle.
@@ -241,8 +236,10 @@ interface IProject {
     /// @param keyId Logical identifier of the key.
     /// @param algorithmId Algorithm this key is bound to. Must already be registered and enabled.
     /// @param publicKey Raw encoded public key material.
+    ///        For ECDSA_SECP256K1_EIP712: abi.encode(address expectedSigner) — 32 bytes.
     /// @param tenantId Tenant the key belongs to.
-    /// @param expiresAt Absolute expiry timestamp. Pass 0 for no expiry; if non-zero must be strictly greater than the current block timestamp.
+    /// @param expiresAt Absolute expiry timestamp. Pass 0 for no expiry; if non-zero must be
+    ///        strictly greater than the current block timestamp.
     function registerKey(
         bytes32 keyId,
         bytes32 algorithmId,
@@ -279,7 +276,7 @@ interface IProject {
 
     /*//////////////////////////////////////////////////////////////
                         AUDIT ANCHORING
-//////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Anchors an audit envelope with one or more verified signatures.
     /// @dev The `envelope.status` value is opaque to this contract; it is stored
@@ -297,8 +294,6 @@ interface IProject {
     function exists(bytes32 eventHash) external view returns (bool exists_);
 
     /// @notice Reads the stored anchor for an event hash.
-    /// @dev The returned `anchor_.status` is opaque and was not interpreted or
-    ///      validated by this contract on the way in.
     /// @param eventHash Event hash to read.
     /// @return anchor_ Stored anchor record.
     function getAnchor(
@@ -369,13 +364,6 @@ interface IProject {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Returns the EIP-712 domain parameters for this contract.
-    /// @return fields Domain field mask (ERC-5267).
-    /// @return name EIP-712 domain name.
-    /// @return version EIP-712 domain version.
-    /// @return chainId Chain ID bound into the domain separator.
-    /// @return verifyingContract Address bound into the domain separator.
-    /// @return salt Domain separator salt (unused, zero).
-    /// @return extensions Domain extensions (unused, empty).
     function eip712Domain()
         external
         view
