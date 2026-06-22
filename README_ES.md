@@ -1,53 +1,58 @@
-# isbe-clients-template
+# CTB Audit Service V1 — Modalidad 1 del Diamond de ISBE
 
-Plantilla para desplegar contratos inteligentes propios en una red local de ISBE.
+Este repositorio contiene CTB Audit Service V1 adaptado a la arquitectura Diamond de ISBE.
 
-Este repositorio incluye todo lo necesario para: levantar una red ISBE local con Docker, escribir y compilar contratos Solidity, y desplegarlos en la red mediante el patrón Diamond (EIP-2535).
+La versión actual sigue la modalidad 1 de ISBE: la lógica del servicio de auditoría y la verificación de firmas quedan cubiertas por el flujo del Diamond. La verificación ECDSA secp256k1 EIP-712 se realiza de forma nativa dentro de `AuditServiceInternal`, sin desplegar un contrato verificador independiente.
 
-Para más información sobre ISBE, consulta la documentación oficial: [Red ISBE](https://docs.redisbe.com/documentation/)
+## Contenido del repositorio
 
----
+* `contracts/auditservice/`: contratos del CTB Audit Service V1.
+* `contracts/constants/`: constantes compartidas, storage slot, resolver/config IDs, roles y dominio EIP-712.
+* `contracts/example-hashtimestamp/`: ejemplo heredado de la plantilla ISBE.
+* `contracts/testwrapper/auditservice/`: wrapper concreto usado por los tests unitarios.
+* `scripts/project/deployAuditService.ts`: script de despliegue del Audit Service unificado.
+* `test/project.test.ts`: tests unitarios del Audit Service unificado.
+* `isbe-network-case/`: red local ISBE/Besu heredada de la plantilla.
 
-## Requisitos previos
+## Arquitectura
 
-- [Node.js](https://nodejs.org/) >= 18
-- [Docker](https://www.docker.com/) instalado y en ejecución
-- [`jq`](https://stedolan.github.io/jq/) — procesador JSON usado por los scripts de red
-  - macOS: `brew install jq`
-  - Ubuntu/Debian: `apt-get install jq`
+El servicio se expone mediante el flujo Diamond/EIP-2535 de ISBE.
 
----
+Contratos principales:
 
-## Estructura del proyecto
+* `AuditServiceFacet.sol`: facet Diamond e introspección.
+* `AuditService.sol`: capa externa con RBAC y pause guards.
+* `AuditServiceInternal.sol`: storage, lógica de negocio y verificación ECDSA nativa.
+* `IAuditService.sol`: interfaz pública, eventos y errores custom.
+* `AuditTypes.sol`: structs compartidos para schemas, algoritmos, claves, envelopes y anchors.
 
+El enfoque anterior con verificador externo se ha eliminado de los contratos productivos. En la versión unificada no existe un `ISignatureVerifier` productivo ni un `EcdsaSecp256k1Verifier` desplegable aparte.
+
+## Algoritmo de firma nativo
+
+Algoritmo soportado:
+
+```text
+ECDSA_SECP256K1_EIP712
 ```
-contracts/
-  constants/                   — constantes compartidas (roles, storage slots, config IDs)
-  project-contracts/         — contratos de ejemplo: sustituir por los propios
-  testwrapper/               — wrapper para tests unitarios
-scripts/
-  deployContracts.ts         — script de despliegue Diamond en tres pasos
-isbe-network-case/           — entorno de red local ISBE (Docker + Besu)
-  startNetwork.sh            — arranca la red
-  stopNetwork.sh             — para la red
-  QBFT-Network/              — datos de los nodos (claves, génesis, etc.)
+
+La public key se codifica como:
+
+```text
+abi.encode(address expectedSigner)
 ```
 
----
+El payload firmado es un `AuditEnvelope` EIP-712 ligado al contrato verificador desplegado.
 
-## Instalación
+## Instalación local
+
+Instala dependencias:
 
 ```bash
-npm install
+npm ci
 ```
 
-Copia el archivo de variables de entorno y rellena los valores:
-
-```bash
-cp .env_sample .env
-```
-
-Edita `.env` con las credenciales de **Account #0 de Hardhat**:
+Crea `.env` desde `.env_sample` y configura la cuenta local:
 
 ```env
 ACCOUNT_ADDRESS=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
@@ -55,175 +60,90 @@ ACCOUNT_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4
 LOCALHOST_URL=http://localhost:8545
 ```
 
-> Es necesario utilizar Account #0 porque es la cuenta pre-financiada en el génesis de la red local con permisos de administrador para el despliegue.
->
-> ⚠️ Estas credenciales son públicas y solo válidas para desarrollo local. **Nunca las uses en mainnet ni en ningún entorno con valor real.**
+Estas credenciales son públicas de desarrollo Hardhat. No deben usarse en entornos con valor real.
 
+## Tests
 
----
+Ejecuta:
 
-## 1. Levantar la red local
+```bash
+npx hardhat clean
+npx hardhat compile
+npx hardhat test
+```
 
-Desde la carpeta `isbe-network-case`:
+Resultado esperado:
+
+```text
+45 passing
+```
+
+La suite cubre ciclo de vida de claves, actividad basada en timestamp, lookup O(1) de signers, aislamiento por tenant, idempotencia, validaciones de schema y algoritmo, validación de envelopes, binding EIP-712, verificación ECDSA nativa, pausado, RBAC y metadata.
+
+## Despliegue en ISBE local
+
+Levanta la red local ISBE/Besu:
 
 ```bash
 cd isbe-network-case
 ./startNetwork.sh
+cd ..
 ```
 
-Esto levanta 4 nodos Besu con QBFT mediante Docker. Para comprobar que están corriendo:
+Comprueba la chain:
 
 ```bash
-docker ps
+curl -X POST http://localhost:8545 \
+  -H "Content-Type: application/json" \
+  --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'
 ```
 
-Para parar la red:
+Chain ID esperado:
 
-```bash
-./stopNetwork.sh
+```text
+0x2b41
 ```
 
----
+La dirección del Diamond de gobierno de ISBE es:
 
-## 2. Añadir los contratos propios
-
-Los contratos de ejemplo en `contracts/project-contracts/` sirven como referencia para pruebas en local. A la hora de integrar los contratos propios hay dos opciones:
-
-**Opción A — Renombrar los contratos propios para encajar en la estructura de ejemplo.** Renombra tus contratos a `ProjectFacet`, `ProjectInternal`, etc. De este modo el script de despliegue y los constants apenas necesitan cambios.
-
-**Opción B — Sustituir la estructura entera.** Borra los contratos de ejemplo y coloca los tuyos con su propia nomenclatura. En este caso hay que actualizar también el script de despliegue y los constants para que los nombres coincidan.
-
-En cualquier caso los pasos son:
-
-1. Coloca tus contratos en `contracts/`
-2. Actualiza `contracts/constants/constants.sol` con las constantes de tu proyecto (ver sección siguiente)
-3. Actualiza el nombre del facet en `scripts/project/deployContracts.ts` (línea `artifacts.readArtifact('ProjectFacet')`)
-4. Calcula y rellena las constantes del script de despliegue (ver sección siguiente)
-
-En el fichero `Adaptacion.md` puedes encontrar más detalles sobre cómo adaptar tu código de smart contracts para que tengan la estructura del diamante de ISBE.
-
----
-
-## 3. Definir el namespace y las constantes
-
-Los contratos de ejemplo usan un namespace genérico en `contracts/constants/constants.sol`:
-
-```solidity
-bytes32 constant _PROJECT_STORAGE_POSITION = keccak256('isbe.customers.customer.project.storage');
-bytes32 constant _PROJECT_ROLE             = keccak256('isbe.customers.customer.role.project.role');
-bytes32 constant _PROJECT_RESOLVER_KEY     = keccak256('isbe.customers.customer.role.project.resolver.key');
-bytes32 constant _PROJECT_CONFIG_ID        = keccak256('isbe.customers.customer.project.configuration');
-```
-
-Los términos `customer`, `project` y `role` son placeholders. En un despliegue real hay que sustituirlos por los valores propios del cliente: nombre de la empresa, nombre del proyecto y nombre del rol. Por ejemplo:
-
-```solidity
-bytes32 constant _ACME_STORAGE_POSITION = keccak256('isbe.customers.acme.invoicing.storage');
-bytes32 constant _ACME_ROLE             = keccak256('isbe.customers.acme.role.invoicing.manager');
-bytes32 constant _ACME_RESOLVER_KEY     = keccak256('isbe.customers.acme.role.invoicing.resolver.key');
-bytes32 constant _ACME_CONFIG_ID        = keccak256('isbe.customers.acme.invoicing.configuration');
-```
-
-Una vez definido el namespace, hay que calcular los valores hash para el script de despliegue:
-
-```typescript
-const PROJECT_RESOLVER_KEY = '' // keccak256 del resolver key de tu facet
-const PROJECT_CONFIG_ID = ''    // keccak256 del config ID de tu proyecto
-```
-
-Puedes calcularlos con Node.js:
-
-```bash
-node -e "const { ethers } = require('ethers'); console.log(ethers.keccak256(ethers.toUtf8Bytes('isbe.customers.acme.role.invoicing.resolver.key')))"
-```
-
-Los valores deben coincidir exactamente con los definidos en `contracts/constants/constants.sol`.
-
----
-
-## 4. Compilar
-
-```bash
-npx hardhat compile
-```
-
----
-
-## 5. Desplegar
-
-```bash
-npx hardhat run scripts/project/deployContracts.ts --network isbe
-```
-
-El script realiza tres pasos automáticamente:
-
-1. **`deploy`** — registra el bytecode de tu facet en el Diamond con el resolver key
-2. **`setConfiguration`** — asocia el resolver key con el config ID
-3. **`deployUseCase`** — despliega el proxy que enruta al facet registrado
-
-Al finalizar muestra un resumen con las direcciones de la implementación y del proxy.
-
----
-
-## Tests
-
-```bash
-npx hardhat test
-```
-
-Los tests usan `ProjectTestWrapper`, un contrato que extiende el facet con helpers de inicialización y pausa para pruebas unitarias aisladas, sin necesidad de infraestructura de gobernanza.
-
----
-
-## Cómo funciona el patrón Diamond en ISBE
-
-La red ISBE tiene un proxy Diamond en una dirección fija de génesis:
-
-```
+```text
 0x00000000000000000000000000000000000015BE
 ```
 
-Este proxy enruta las llamadas a los facets registrados. Al desplegar un caso de uso no se despliega un contrato de forma directa — se registra la implementación en el Diamond y este crea el proxy. Eso significa que:
-
-- La dirección del proxy la asigna el Diamond, no el deployer
-- El storage del contrato persiste entre actualizaciones
-- Para actualizar la lógica basta con registrar una nueva versión del bytecode (pasos 1 y 2) sin redesplegar el proxy
-
----
-
-## Ejemplo: HashTimestamp
-
-La carpeta `contracts/example-hashtimestamp/` contiene un caso de uso completo y funcional que sirve como referencia de cómo debería quedar un proyecto real adaptado a esta plantilla.
-
-`HashTimestampFacet` es un facet que permite registrar hashes en blockchain junto con su timestamp. Una vez registrado un hash, queda sellado con la marca de tiempo del bloque y no puede volver a registrarse. Expone tres funciones: `timestampHash`, `exists` y `getTimestamp`.
-
-La estructura del ejemplo sigue exactamente el mismo patrón que se espera de cualquier proyecto real:
-
-```
-contracts/
-  constants/constants.sol                              — constantes del ejemplo añadidas al constants compartido
-  example-hashtimestamp/
-    IHashTimestamp.sol                             — interfaz pública
-    HashTimestampInternal.sol                      — lógica y storage internos
-    HashTimestamp.sol                              — contrato abstracto con las funciones externas
-    HashTimestampFacet.sol                         — facet Diamond con introspección EIP-2535
-  testwrapper/hashtimestamp/
-    HashTimestampTestWrapper.sol                   — wrapper para tests unitarios
-scripts/
-  hashtimestamp/
-    deployHashTimestamp.ts                         — script de despliegue del ejemplo
-```
-
-Para desplegar el ejemplo en la red local:
+Despliega el Audit Service:
 
 ```bash
-npx hardhat run scripts/hashtimestamp/deployHashTimestamp.ts --network isbe
+npx hardhat run ./scripts/project/deployAuditService.ts --network isbe
 ```
 
-Al adaptar esta plantilla a un proyecto propio, este ejemplo muestra concretamente qué hay que hacer en cada archivo: dónde definir el storage, cómo implementar la introspección EIP-2535, cómo añadir las constantes al constants, y cómo ajustar el script de despliegue con el namespace y los hashes correctos.
+El script realiza tres pasos:
 
----
+1. Registra `AuditServiceFacet` como business logic en el Diamond de ISBE.
+2. Configura el caso de uso.
+3. Despliega el proxy del Audit Service.
 
-## Licencia
+## Estado de validación
 
-Apache-2.0
+Validado localmente con:
+
+```bash
+npm ci
+npx hardhat clean
+npx hardhat compile
+npx hardhat test
+npx hardhat run ./scripts/project/deployAuditService.ts --network isbe
+```
+
+Ejemplo del último despliegue local:
+
+```text
+Diamond governance: 0x00000000000000000000000000000000000015BE
+Implementation:    0xFe1767dAF1eC7306a807326442562Cd0d0529231
+AuditService proxy: 0x01D01347D87e2DB248df9fD9D25bB5439e35e20C
+```
+
+## Nota para Windows / Git Bash
+
+Los scripts de red local Besu usan bind mounts de Docker. En Windows con Git Bash, la conversión automática de rutas puede romper rutas internas del contenedor como `/opt/besu/config`.
+
+Los scripts incluidos normalizan los mounts de Docker con `cygpath -m` y protegen los argumentos de Docker con `MSYS2_ARG_CONV_EXCL="*"`.

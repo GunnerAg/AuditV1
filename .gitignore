@@ -21,7 +21,7 @@ coverage.json
 deployments/*.json
 !deployments/.gitkeep
 
-# Hardhat Ignition default folder for deployments against a local node
+# Hardhat Ignition local deployments
 ignition/deployments/chain-31337/
 
 # Local Besu runtime/cache files
