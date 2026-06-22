@@ -22,5 +22,7 @@ deployments/*.json
 !deployments/.gitkeep
 
 # Hardhat Ignition default folder for deployments against a local node
-ignition/deployments/chain-31337
+ignition/deployments/chain-31337/
+
+# Local Besu runtime/cache files
 isbe-network-case/QBFT-Network/Node-*/data/caches/
