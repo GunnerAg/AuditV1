@@ -1566,6 +1566,7 @@
   prepopulate_block_cache: 0
   initial_auto_readahead_size: 8192
   num_file_reads_for_auto_readahead: 2
+<<<<<<< Updated upstream
 2026/06/15-08:35:34.438445 140469877032640        Options.write_buffer_size: 67108864
 2026/06/15-08:35:34.438447 140469877032640  Options.max_write_buffer_number: 2
 2026/06/15-08:35:34.438447 140469877032640          Options.compression: LZ4
@@ -2428,3 +2429,158 @@
 2026/06/16-10:35:37.196781 140467366319808 [/db_impl/db_impl.cc:990] Storing 217 stats with timestamp 1781606137 to in-memory stats history
 2026/06/16-10:35:37.196890 140467366319808 [/db_impl/db_impl.cc:1003] [Pre-GC] In-memory stats history size: 1051511 bytes, slice count: 101
 2026/06/16-10:35:37.198311 140467366319808 [/db_impl/db_impl.cc:1012] [Post-GC] In-memory stats history size: 1051511 bytes, slice count: 100
+=======
+2026/06/22-11:50:42.989932 139822702769856        Options.write_buffer_size: 67108864
+2026/06/22-11:50:42.989932 139822702769856  Options.max_write_buffer_number: 2
+2026/06/22-11:50:42.989933 139822702769856          Options.compression: LZ4
+2026/06/22-11:50:42.989934 139822702769856                  Options.bottommost_compression: Disabled
+2026/06/22-11:50:42.989934 139822702769856       Options.prefix_extractor: nullptr
+2026/06/22-11:50:42.989935 139822702769856   Options.memtable_insert_with_hint_prefix_extractor: nullptr
+2026/06/22-11:50:42.989936 139822702769856             Options.num_levels: 7
+2026/06/22-11:50:42.989936 139822702769856        Options.min_write_buffer_number_to_merge: 1
+2026/06/22-11:50:42.989937 139822702769856     Options.max_write_buffer_size_to_maintain: 134217728
+2026/06/22-11:50:42.989937 139822702769856            Options.bottommost_compression_opts.window_bits: -14
+2026/06/22-11:50:42.989938 139822702769856                  Options.bottommost_compression_opts.level: 32767
+2026/06/22-11:50:42.989939 139822702769856               Options.bottommost_compression_opts.strategy: 0
+2026/06/22-11:50:42.989939 139822702769856         Options.bottommost_compression_opts.max_dict_bytes: 0
+2026/06/22-11:50:42.989940 139822702769856         Options.bottommost_compression_opts.zstd_max_train_bytes: 0
+2026/06/22-11:50:42.989941 139822702769856         Options.bottommost_compression_opts.parallel_threads: 1
+2026/06/22-11:50:42.989941 139822702769856                  Options.bottommost_compression_opts.enabled: false
+2026/06/22-11:50:42.989942 139822702769856         Options.bottommost_compression_opts.max_dict_buffer_bytes: 0
+2026/06/22-11:50:42.989942 139822702769856         Options.bottommost_compression_opts.use_zstd_dict_trainer: true
+2026/06/22-11:50:42.989943 139822702769856            Options.compression_opts.window_bits: -14
+2026/06/22-11:50:42.989944 139822702769856                  Options.compression_opts.level: 32767
+2026/06/22-11:50:42.989944 139822702769856               Options.compression_opts.strategy: 0
+2026/06/22-11:50:42.989945 139822702769856         Options.compression_opts.max_dict_bytes: 0
+2026/06/22-11:50:42.989945 139822702769856         Options.compression_opts.zstd_max_train_bytes: 0
+2026/06/22-11:50:42.989946 139822702769856         Options.compression_opts.use_zstd_dict_trainer: true
+2026/06/22-11:50:42.989947 139822702769856         Options.compression_opts.parallel_threads: 1
+2026/06/22-11:50:42.989947 139822702769856                  Options.compression_opts.enabled: false
+2026/06/22-11:50:42.989948 139822702769856         Options.compression_opts.max_dict_buffer_bytes: 0
+2026/06/22-11:50:42.989949 139822702769856      Options.level0_file_num_compaction_trigger: 4
+2026/06/22-11:50:42.989950 139822702769856          Options.level0_slowdown_writes_trigger: 20
+2026/06/22-11:50:42.989950 139822702769856              Options.level0_stop_writes_trigger: 36
+2026/06/22-11:50:42.989951 139822702769856                   Options.target_file_size_base: 67108864
+2026/06/22-11:50:42.989952 139822702769856             Options.target_file_size_multiplier: 1
+2026/06/22-11:50:42.989952 139822702769856                Options.max_bytes_for_level_base: 268435456
+2026/06/22-11:50:42.989953 139822702769856 Options.level_compaction_dynamic_level_bytes: 1
+2026/06/22-11:50:42.989954 139822702769856          Options.max_bytes_for_level_multiplier: 10.000000
+2026/06/22-11:50:42.989955 139822702769856 Options.max_bytes_for_level_multiplier_addtl[0]: 1
+2026/06/22-11:50:42.989956 139822702769856 Options.max_bytes_for_level_multiplier_addtl[1]: 1
+2026/06/22-11:50:42.989956 139822702769856 Options.max_bytes_for_level_multiplier_addtl[2]: 1
+2026/06/22-11:50:42.989957 139822702769856 Options.max_bytes_for_level_multiplier_addtl[3]: 1
+2026/06/22-11:50:42.989958 139822702769856 Options.max_bytes_for_level_multiplier_addtl[4]: 1
+2026/06/22-11:50:42.989958 139822702769856 Options.max_bytes_for_level_multiplier_addtl[5]: 1
+2026/06/22-11:50:42.989959 139822702769856 Options.max_bytes_for_level_multiplier_addtl[6]: 1
+2026/06/22-11:50:42.989962 139822702769856       Options.max_sequential_skip_in_iterations: 8
+2026/06/22-11:50:42.989962 139822702769856          Options.memtable_op_scan_flush_trigger: 0
+2026/06/22-11:50:42.989963 139822702769856      Options.memtable_avg_op_scan_flush_trigger: 0
+2026/06/22-11:50:42.989964 139822702769856                    Options.max_compaction_bytes: 1677721600
+2026/06/22-11:50:42.989964 139822702769856                        Options.arena_block_size: 1048576
+2026/06/22-11:50:42.989965 139822702769856   Options.soft_pending_compaction_bytes_limit: 68719476736
+2026/06/22-11:50:42.989965 139822702769856   Options.hard_pending_compaction_bytes_limit: 274877906944
+2026/06/22-11:50:42.989966 139822702769856                Options.disable_auto_compactions: 0
+2026/06/22-11:50:42.989967 139822702769856                        Options.compaction_style: kCompactionStyleLevel
+2026/06/22-11:50:42.989968 139822702769856                          Options.compaction_pri: kMinOverlappingRatio
+2026/06/22-11:50:42.989968 139822702769856 Options.compaction_options_universal.size_ratio: 1
+2026/06/22-11:50:42.989969 139822702769856 Options.compaction_options_universal.min_merge_width: 2
+2026/06/22-11:50:42.989969 139822702769856 Options.compaction_options_universal.max_merge_width: 4294967295
+2026/06/22-11:50:42.989970 139822702769856 Options.compaction_options_universal.max_size_amplification_percent: 200
+2026/06/22-11:50:42.989971 139822702769856 Options.compaction_options_universal.compression_size_percent: -1
+2026/06/22-11:50:42.989971 139822702769856 Options.compaction_options_universal.stop_style: kCompactionStopStyleTotalSize
+2026/06/22-11:50:42.989972 139822702769856 Options.compaction_options_universal.max_read_amp: -1
+2026/06/22-11:50:42.989972 139822702769856 Options.compaction_options_universal.reduce_file_locking: 0
+2026/06/22-11:50:42.989973 139822702769856 Options.compaction_options_fifo.max_table_files_size: 1073741824
+2026/06/22-11:50:42.989974 139822702769856 Options.compaction_options_fifo.allow_compaction: 0
+2026/06/22-11:50:42.989975 139822702769856                   Options.table_properties_collectors: 
+2026/06/22-11:50:42.989975 139822702769856                   Options.inplace_update_support: 0
+2026/06/22-11:50:42.989976 139822702769856                 Options.inplace_update_num_locks: 10000
+2026/06/22-11:50:42.989977 139822702769856               Options.memtable_prefix_bloom_size_ratio: 0.000000
+2026/06/22-11:50:42.989977 139822702769856               Options.memtable_whole_key_filtering: 0
+2026/06/22-11:50:42.989978 139822702769856   Options.memtable_huge_page_size: 0
+2026/06/22-11:50:42.989979 139822702769856                           Options.bloom_locality: 0
+2026/06/22-11:50:42.989979 139822702769856                    Options.max_successive_merges: 0
+2026/06/22-11:50:42.989980 139822702769856             Options.strict_max_successive_merges: 0
+2026/06/22-11:50:42.989980 139822702769856                Options.optimize_filters_for_hits: 0
+2026/06/22-11:50:42.989981 139822702769856                Options.paranoid_file_checks: 0
+2026/06/22-11:50:42.989982 139822702769856                Options.force_consistency_checks: 1
+2026/06/22-11:50:42.989982 139822702769856                Options.report_bg_io_stats: 0
+2026/06/22-11:50:42.989983 139822702769856                Options.disallow_memtable_writes: 0
+2026/06/22-11:50:42.989983 139822702769856                               Options.ttl: 0
+2026/06/22-11:50:42.989984 139822702769856          Options.periodic_compaction_seconds: 0
+2026/06/22-11:50:42.989985 139822702769856                        Options.default_temperature: kUnknown
+2026/06/22-11:50:42.989985 139822702769856  Options.preclude_last_level_data_seconds: 0
+2026/06/22-11:50:42.989986 139822702769856    Options.preserve_internal_time_seconds: 0
+2026/06/22-11:50:42.989986 139822702769856                       Options.enable_blob_files: false
+2026/06/22-11:50:42.989987 139822702769856                           Options.min_blob_size: 0
+2026/06/22-11:50:42.990046 139822702769856                          Options.blob_file_size: 268435456
+2026/06/22-11:50:42.990047 139822702769856                   Options.blob_compression_type: NoCompression
+2026/06/22-11:50:42.990048 139822702769856          Options.enable_blob_garbage_collection: false
+2026/06/22-11:50:42.990049 139822702769856      Options.blob_garbage_collection_age_cutoff: 0.250000
+2026/06/22-11:50:42.990049 139822702769856 Options.blob_garbage_collection_force_threshold: 1.000000
+2026/06/22-11:50:42.990050 139822702769856          Options.blob_compaction_readahead_size: 0
+2026/06/22-11:50:42.990051 139822702769856                Options.blob_file_starting_level: 0
+2026/06/22-11:50:42.990051 139822702769856         Options.experimental_mempurge_threshold: 0.000000
+2026/06/22-11:50:42.990052 139822702769856            Options.memtable_max_range_deletions: 0
+2026/06/22-11:50:42.990053 139822702769856                  Options.cf_allow_ingest_behind: false
+2026/06/22-11:50:42.990092 139822702769856 [/column_family.cc:696] 	(skipping printing options)
+2026/06/22-11:50:42.990124 139822702769856 [/column_family.cc:696] 	(skipping printing options)
+2026/06/22-11:50:42.990152 139822702769856 [/column_family.cc:696] 	(skipping printing options)
+2026/06/22-11:50:42.990182 139822702769856 [/column_family.cc:696] 	(skipping printing options)
+2026/06/22-11:50:42.990218 139822702769856 [/column_family.cc:696] 	(skipping printing options)
+2026/06/22-11:50:42.990254 139822702769856 [/column_family.cc:696] 	(skipping printing options)
+2026/06/22-11:50:42.990286 139822702769856 [/column_family.cc:696] 	(skipping printing options)
+2026/06/22-11:50:43.065635 139822702769856 [/version_set.cc:6239] Recovered from manifest file:/opt/besu/data/database/MANIFEST-000019 succeeded,manifest_file_number is 19, next_file_number is 31, last_sequence is 2764, log_number is 5,prev_log_number is 0,max_column_family is 16,min_log_number_to_keep is 5
+2026/06/22-11:50:43.065648 139822702769856 [/version_set.cc:6254] Column family [default] (ID 0), log number is 5
+2026/06/22-11:50:43.065649 139822702769856 [/version_set.cc:6254] Column family [] (ID 1), log number is 5
+2026/06/22-11:50:43.065650 139822702769856 [/version_set.cc:6254] Column family [] (ID 2), log number is 5
+2026/06/22-11:50:43.065651 139822702769856 [/version_set.cc:6254] Column family [] (ID 3), log number is 5
+2026/06/22-11:50:43.065652 139822702769856 [/version_set.cc:6254] Column family [] (ID 4), log number is 5
+2026/06/22-11:50:43.065653 139822702769856 [/version_set.cc:6254] Column family [] (ID 5), log number is 5
+2026/06/22-11:50:43.065654 139822702769856 [/version_set.cc:6254] Column family [] (ID 6), log number is 5
+2026/06/22-11:50:43.065655 139822702769856 [/version_set.cc:6254] Column family [	] (ID 7), log number is 5
+2026/06/22-11:50:43.065656 139822702769856 [/version_set.cc:6254] Column family [
+] (ID 8), log number is 5
+2026/06/22-11:50:43.065657 139822702769856 [/version_set.cc:6254] Column family [] (ID 9), log number is 5
+2026/06/22-11:50:43.065658 139822702769856 [/version_set.cc:6254] Column family [] (ID 10), log number is 5
+2026/06/22-11:50:43.065660 139822702769856 [/version_set.cc:6254] Column family [] (ID 11), log number is 5
+2026/06/22-11:50:43.065661 139822702769856 [/version_set.cc:6254] Column family [] (ID 12), log number is 5
+2026/06/22-11:50:43.065662 139822702769856 [/version_set.cc:6254] Column family [] (ID 13), log number is 5
+2026/06/22-11:50:43.065663 139822702769856 [/version_set.cc:6254] Column family [] (ID 14), log number is 5
+2026/06/22-11:50:43.065664 139822702769856 [/version_set.cc:6254] Column family [] (ID 15), log number is 5
+2026/06/22-11:50:43.065665 139822702769856 [/version_set.cc:6254] Column family [] (ID 16), log number is 5
+2026/06/22-11:50:43.068568 139822702769856 [/db_impl/db_impl_open.cc:686] DB ID: 14fc1baa-4087-419d-8201-9d9c6b4fa7ab
+2026/06/22-11:50:43.073170 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129043073142, "job": 1, "event": "recovery_started", "wal_files": [18]}
+2026/06/22-11:50:43.073194 139822702769856 [/db_impl/db_impl_open.cc:1368] Recovering log #18 mode 2
+2026/06/22-11:50:46.524481 139822702769856 [/db_impl/db_impl_open.cc:1342] Recovered to log #18 next seq #587921
+2026/06/22-11:50:47.636512 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129047636468, "cf_name": "", "job": 1, "event": "blob_file_creation", "file_number": 33, "total_blob_count": 44872, "total_blob_bytes": 28391883, "file_checksum": "", "file_checksum_func_name": "Unknown", "status": "OK"}
+2026/06/22-11:50:47.636528 139822702769856 [/blob/blob_file_builder.cc:353] [] [JOB 1] Generated blob file #33: 44872 total blobs, 28391883 total bytes
+2026/06/22-11:50:47.647287 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129047647251, "cf_name": "", "job": 1, "event": "table_file_creation", "file_number": 32, "file_size": 10280113, "file_checksum": "", "file_checksum_func_name": "Unknown", "smallest_seqno": 2765, "largest_seqno": 587913, "table_properties": {"data_size": 9946382, "index_size": 7646, "index_partitions": 0, "top_level_index_size": 0, "index_key_is_user_key": 1, "index_value_is_delta_encoded": 1, "filter_size": 327621, "raw_key_size": 9186613, "raw_average_key_size": 40, "raw_value_size": 3448581, "raw_average_value_size": 15, "num_data_blocks": 356, "num_entries": 224066, "num_filter_entries": 224066, "num_deletions": 5, "num_merge_operands": 0, "num_range_deletions": 0, "format_version": 5, "fixed_key_len": 0, "filter_policy": "bloomfilter", "column_family_name": "", "column_family_id": 1, "comparator": "leveldb.BytewiseComparator", "user_defined_timestamps_persisted": 1, "key_largest_seqno": 587913, "merge_operator": "nullptr", "prefix_extractor_name": "nullptr", "property_collectors": "[]", "compression": "LZ4", "compression_options": "window_bits=-14; level=32767; strategy=0; max_dict_bytes=0; zstd_max_train_bytes=0; enabled=0; max_dict_buffer_bytes=0; use_zstd_dict_trainer=1; max_compressed_bytes_per_kb=896; checksum=0; ", "creation_time": 1782129046, "oldest_key_time": 1782129046, "newest_key_time": 0, "file_creation_time": 0, "slow_compression_estimated_data_size": 0, "fast_compression_estimated_data_size": 0, "db_id": "14fc1baa-4087-419d-8201-9d9c6b4fa7ab", "db_session_id": "IHGWT8RZVADO6LM9BXWG", "orig_file_number": 32, "seqno_to_time_mapping": "N/A"}, "oldest_blob_file_number": 33, "status": "OK"}
+2026/06/22-11:50:47.665236 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129047665213, "cf_name": "", "job": 1, "event": "table_file_creation", "file_number": 34, "file_size": 2890, "file_checksum": "", "file_checksum_func_name": "Unknown", "smallest_seqno": 539975, "largest_seqno": 586686, "table_properties": {"data_size": 1626, "index_size": 50, "index_partitions": 0, "top_level_index_size": 0, "index_key_is_user_key": 1, "index_value_is_delta_encoded": 1, "filter_size": 69, "raw_key_size": 880, "raw_average_key_size": 40, "raw_value_size": 1562, "raw_average_value_size": 71, "num_data_blocks": 1, "num_entries": 22, "num_filter_entries": 22, "num_deletions": 0, "num_merge_operands": 0, "num_range_deletions": 0, "format_version": 5, "fixed_key_len": 0, "filter_policy": "bloomfilter", "column_family_name": "", "column_family_id": 4, "comparator": "leveldb.BytewiseComparator", "user_defined_timestamps_persisted": 1, "key_largest_seqno": 586686, "merge_operator": "nullptr", "prefix_extractor_name": "nullptr", "property_collectors": "[]", "compression": "LZ4", "compression_options": "window_bits=-14; level=32767; strategy=0; max_dict_bytes=0; zstd_max_train_bytes=0; enabled=0; max_dict_buffer_bytes=0; use_zstd_dict_trainer=1; max_compressed_bytes_per_kb=896; checksum=0; ", "creation_time": 1782129047, "oldest_key_time": 1782129047, "newest_key_time": 0, "file_creation_time": 0, "slow_compression_estimated_data_size": 0, "fast_compression_estimated_data_size": 0, "db_id": "14fc1baa-4087-419d-8201-9d9c6b4fa7ab", "db_session_id": "IHGWT8RZVADO6LM9BXWG", "orig_file_number": 34, "seqno_to_time_mapping": "N/A"}, "status": "OK"}
+2026/06/22-11:50:47.684125 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129047684093, "cf_name": "", "job": 1, "event": "table_file_creation", "file_number": 35, "file_size": 24120, "file_checksum": "", "file_checksum_func_name": "Unknown", "smallest_seqno": 565890, "largest_seqno": 586682, "table_properties": {"data_size": 22838, "index_size": 63, "index_partitions": 0, "top_level_index_size": 0, "index_key_is_user_key": 1, "index_value_is_delta_encoded": 1, "filter_size": 69, "raw_key_size": 320, "raw_average_key_size": 40, "raw_value_size": 38980, "raw_average_value_size": 4872, "num_data_blocks": 2, "num_entries": 8, "num_filter_entries": 8, "num_deletions": 0, "num_merge_operands": 0, "num_range_deletions": 0, "format_version": 5, "fixed_key_len": 0, "filter_policy": "bloomfilter", "column_family_name": "", "column_family_id": 5, "comparator": "leveldb.BytewiseComparator", "user_defined_timestamps_persisted": 1, "key_largest_seqno": 586682, "merge_operator": "nullptr", "prefix_extractor_name": "nullptr", "property_collectors": "[]", "compression": "LZ4", "compression_options": "window_bits=-14; level=32767; strategy=0; max_dict_bytes=0; zstd_max_train_bytes=0; enabled=0; max_dict_buffer_bytes=0; use_zstd_dict_trainer=1; max_compressed_bytes_per_kb=896; checksum=0; ", "creation_time": 1782129047, "oldest_key_time": 1782129047, "newest_key_time": 0, "file_creation_time": 0, "slow_compression_estimated_data_size": 0, "fast_compression_estimated_data_size": 0, "db_id": "14fc1baa-4087-419d-8201-9d9c6b4fa7ab", "db_session_id": "IHGWT8RZVADO6LM9BXWG", "orig_file_number": 35, "seqno_to_time_mapping": "N/A"}, "status": "OK"}
+2026/06/22-11:50:47.713185 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129047713158, "cf_name": "", "job": 1, "event": "table_file_creation", "file_number": 36, "file_size": 29001, "file_checksum": "", "file_checksum_func_name": "Unknown", "smallest_seqno": 539951, "largest_seqno": 586606, "table_properties": {"data_size": 26880, "index_size": 128, "index_partitions": 0, "top_level_index_size": 0, "index_key_is_user_key": 1, "index_value_is_delta_encoded": 1, "filter_size": 837, "raw_key_size": 47160, "raw_average_key_size": 72, "raw_value_size": 20960, "raw_average_value_size": 32, "num_data_blocks": 2, "num_entries": 655, "num_filter_entries": 655, "num_deletions": 0, "num_merge_operands": 0, "num_range_deletions": 0, "format_version": 5, "fixed_key_len": 0, "filter_policy": "bloomfilter", "column_family_name": "", "column_family_id": 6, "comparator": "leveldb.BytewiseComparator", "user_defined_timestamps_persisted": 1, "key_largest_seqno": 586606, "merge_operator": "nullptr", "prefix_extractor_name": "nullptr", "property_collectors": "[]", "compression": "LZ4", "compression_options": "window_bits=-14; level=32767; strategy=0; max_dict_bytes=0; zstd_max_train_bytes=0; enabled=0; max_dict_buffer_bytes=0; use_zstd_dict_trainer=1; max_compressed_bytes_per_kb=896; checksum=0; ", "creation_time": 1782129047, "oldest_key_time": 1782129047, "newest_key_time": 0, "file_creation_time": 0, "slow_compression_estimated_data_size": 0, "fast_compression_estimated_data_size": 0, "db_id": "14fc1baa-4087-419d-8201-9d9c6b4fa7ab", "db_session_id": "IHGWT8RZVADO6LM9BXWG", "orig_file_number": 36, "seqno_to_time_mapping": "N/A"}, "status": "OK"}
+2026/06/22-11:50:47.743284 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129047743257, "cf_name": "	", "job": 1, "event": "table_file_creation", "file_number": 37, "file_size": 92675, "file_checksum": "", "file_checksum_func_name": "Unknown", "smallest_seqno": 539958, "largest_seqno": 587920, "table_properties": {"data_size": 89851, "index_size": 191, "index_partitions": 0, "top_level_index_size": 0, "index_key_is_user_key": 1, "index_value_is_delta_encoded": 1, "filter_size": 1477, "raw_key_size": 46459, "raw_average_key_size": 41, "raw_value_size": 91798, "raw_average_value_size": 81, "num_data_blocks": 4, "num_entries": 1131, "num_filter_entries": 1131, "num_deletions": 0, "num_merge_operands": 0, "num_range_deletions": 0, "format_version": 5, "fixed_key_len": 0, "filter_policy": "bloomfilter", "column_family_name": "	", "column_family_id": 7, "comparator": "leveldb.BytewiseComparator", "user_defined_timestamps_persisted": 1, "key_largest_seqno": 587920, "merge_operator": "nullptr", "prefix_extractor_name": "nullptr", "property_collectors": "[]", "compression": "LZ4", "compression_options": "window_bits=-14; level=32767; strategy=0; max_dict_bytes=0; zstd_max_train_bytes=0; enabled=0; max_dict_buffer_bytes=0; use_zstd_dict_trainer=1; max_compressed_bytes_per_kb=896; checksum=0; ", "creation_time": 1782129047, "oldest_key_time": 1782129047, "newest_key_time": 0, "file_creation_time": 0, "slow_compression_estimated_data_size": 0, "fast_compression_estimated_data_size": 0, "db_id": "14fc1baa-4087-419d-8201-9d9c6b4fa7ab", "db_session_id": "IHGWT8RZVADO6LM9BXWG", "orig_file_number": 37, "seqno_to_time_mapping": "N/A"}, "status": "OK"}
+2026/06/22-11:50:47.862449 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129047862439, "cf_name": "
+", "job": 1, "event": "blob_file_creation", "file_number": 39, "total_blob_count": 41, "total_blob_bytes": 151797, "file_checksum": "", "file_checksum_func_name": "Unknown", "status": "OK"}
+2026/06/22-11:50:47.862458 139822702769856 [/blob/blob_file_builder.cc:353] [
+] [JOB 1] Generated blob file #39: 41 total blobs, 151797 total bytes
+2026/06/22-11:50:47.865424 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129047865398, "cf_name": "
+", "job": 1, "event": "table_file_creation", "file_number": 38, "file_size": 2066216, "file_checksum": "", "file_checksum_func_name": "Unknown", "smallest_seqno": 2771, "largest_seqno": 587908, "table_properties": {"data_size": 2006238, "index_size": 1533, "index_partitions": 0, "top_level_index_size": 0, "index_key_is_user_key": 1, "index_value_is_delta_encoded": 1, "filter_size": 57285, "raw_key_size": 1792280, "raw_average_key_size": 40, "raw_value_size": 1522367, "raw_average_value_size": 33, "num_data_blocks": 105, "num_entries": 44807, "num_filter_entries": 44807, "num_deletions": 0, "num_merge_operands": 0, "num_range_deletions": 0, "format_version": 5, "fixed_key_len": 0, "filter_policy": "bloomfilter", "column_family_name": "
+", "column_family_id": 8, "comparator": "leveldb.BytewiseComparator", "user_defined_timestamps_persisted": 1, "key_largest_seqno": 587908, "merge_operator": "nullptr", "prefix_extractor_name": "nullptr", "property_collectors": "[]", "compression": "LZ4", "compression_options": "window_bits=-14; level=32767; strategy=0; max_dict_bytes=0; zstd_max_train_bytes=0; enabled=0; max_dict_buffer_bytes=0; use_zstd_dict_trainer=1; max_compressed_bytes_per_kb=896; checksum=0; ", "creation_time": 1782129047, "oldest_key_time": 1782129047, "newest_key_time": 0, "file_creation_time": 0, "slow_compression_estimated_data_size": 0, "fast_compression_estimated_data_size": 0, "db_id": "14fc1baa-4087-419d-8201-9d9c6b4fa7ab", "db_session_id": "IHGWT8RZVADO6LM9BXWG", "orig_file_number": 38, "seqno_to_time_mapping": "N/A"}, "oldest_blob_file_number": 39, "status": "OK"}
+2026/06/22-11:50:47.882698 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129047882672, "cf_name": "", "job": 1, "event": "table_file_creation", "file_number": 40, "file_size": 1495, "file_checksum": "", "file_checksum_func_name": "Unknown", "smallest_seqno": 2770, "largest_seqno": 587914, "table_properties": {"data_size": 249, "index_size": 33, "index_partitions": 0, "top_level_index_size": 0, "index_key_is_user_key": 1, "index_value_is_delta_encoded": 1, "filter_size": 69, "raw_key_size": 44, "raw_average_key_size": 22, "raw_value_size": 185, "raw_average_value_size": 92, "num_data_blocks": 1, "num_entries": 2, "num_filter_entries": 2, "num_deletions": 0, "num_merge_operands": 0, "num_range_deletions": 0, "format_version": 5, "fixed_key_len": 0, "filter_policy": "bloomfilter", "column_family_name": "", "column_family_id": 9, "comparator": "leveldb.BytewiseComparator", "user_defined_timestamps_persisted": 1, "key_largest_seqno": 587914, "merge_operator": "nullptr", "prefix_extractor_name": "nullptr", "property_collectors": "[]", "compression": "LZ4", "compression_options": "window_bits=-14; level=32767; strategy=0; max_dict_bytes=0; zstd_max_train_bytes=0; enabled=0; max_dict_buffer_bytes=0; use_zstd_dict_trainer=1; max_compressed_bytes_per_kb=896; checksum=0; ", "creation_time": 1782129047, "oldest_key_time": 1782129047, "newest_key_time": 0, "file_creation_time": 0, "slow_compression_estimated_data_size": 0, "fast_compression_estimated_data_size": 0, "db_id": "14fc1baa-4087-419d-8201-9d9c6b4fa7ab", "db_session_id": "IHGWT8RZVADO6LM9BXWG", "orig_file_number": 40, "seqno_to_time_mapping": "N/A"}, "status": "OK"}
+2026/06/22-11:50:47.947629 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129047947607, "cf_name": "", "job": 1, "event": "table_file_creation", "file_number": 41, "file_size": 1960889, "file_checksum": "", "file_checksum_func_name": "Unknown", "smallest_seqno": 2779, "largest_seqno": 587917, "table_properties": {"data_size": 1901501, "index_size": 3020, "index_partitions": 0, "top_level_index_size": 0, "index_key_is_user_key": 1, "index_value_is_delta_encoded": 1, "filter_size": 57285, "raw_key_size": 1837007, "raw_average_key_size": 40, "raw_value_size": 1523400, "raw_average_value_size": 33, "num_data_blocks": 67, "num_entries": 44806, "num_filter_entries": 44806, "num_deletions": 0, "num_merge_operands": 0, "num_range_deletions": 0, "format_version": 5, "fixed_key_len": 0, "filter_policy": "bloomfilter", "column_family_name": "", "column_family_id": 16, "comparator": "leveldb.BytewiseComparator", "user_defined_timestamps_persisted": 1, "key_largest_seqno": 587917, "merge_operator": "nullptr", "prefix_extractor_name": "nullptr", "property_collectors": "[]", "compression": "LZ4", "compression_options": "window_bits=-14; level=32767; strategy=0; max_dict_bytes=0; zstd_max_train_bytes=0; enabled=0; max_dict_buffer_bytes=0; use_zstd_dict_trainer=1; max_compressed_bytes_per_kb=896; checksum=0; ", "creation_time": 1782129047, "oldest_key_time": 1782129047, "newest_key_time": 0, "file_creation_time": 0, "slow_compression_estimated_data_size": 0, "fast_compression_estimated_data_size": 0, "db_id": "14fc1baa-4087-419d-8201-9d9c6b4fa7ab", "db_session_id": "IHGWT8RZVADO6LM9BXWG", "orig_file_number": 41, "seqno_to_time_mapping": "N/A"}, "status": "OK"}
+2026/06/22-11:50:47.951049 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129047951040, "job": 1, "event": "recovery_finished", "status": "OK"}
+2026/06/22-11:50:47.952843 139822702769856 [/version_set.cc:5697] Creating manifest 43
+2026/06/22-11:50:48.010484 139822702769856 [/db_impl/db_impl_open.cc:2626] SstFileManager instance 0x7f2ad0f78d00
+2026/06/22-11:50:48.013600 139822702769856 [le/delete_scheduler.cc:71] Deleted file /opt/besu/data/database/000011.sst immediately, rate_bytes_per_sec 0, total_trash_size 0, total_size 43446236, max_trash_db_ratio 0.250000
+2026/06/22-11:50:48.013619 139822702769856 EVENT_LOG_v1 {"time_micros": 1782129048013615, "job": 2, "event": "table_file_deletion", "file_number": 11, "status": "OK"}
+2026/06/22-11:50:48.020274 139822702769856 [le/delete_scheduler.cc:71] Deleted file /opt/besu/data/database/000018.log immediately, rate_bytes_per_sec 0, total_trash_size 0, total_size 43362987, max_trash_db_ratio 0.250000
+2026/06/22-11:50:48.021550 139822702769856 DB pointer 0x7f2ad135e800
+2026/06/22-11:50:48.021944 139820275918528 [/db_impl/db_impl.cc:934] ------- PERSISTING STATS -------
+2026/06/22-11:50:48.021950 139820275918528 [/db_impl/db_impl.cc:1003] [Pre-GC] In-memory stats history size: 48 bytes, slice count: 0
+2026/06/22-11:50:48.021951 139820275918528 [/db_impl/db_impl.cc:1012] [Post-GC] In-memory stats history size: 48 bytes, slice count: 0
+2026/06/22-12:00:48.022208 139820275918528 [/db_impl/db_impl.cc:934] ------- PERSISTING STATS -------
+2026/06/22-12:00:48.022559 139820275918528 [/db_impl/db_impl.cc:990] Storing 217 stats with timestamp 1782129648 to in-memory stats history
+2026/06/22-12:00:48.022605 139820275918528 [/db_impl/db_impl.cc:1003] [Pre-GC] In-memory stats history size: 10411 bytes, slice count: 1
+2026/06/22-12:00:48.022609 139820275918528 [/db_impl/db_impl.cc:1012] [Post-GC] In-memory stats history size: 10411 bytes, slice count: 1
+>>>>>>> Stashed changes
