@@ -72,33 +72,26 @@ fi
 
 echo "Iniciando bootnode..."
 
-# Comprobar si la red 'besu-network' tiene una subred configurada
+# La red se crea arriba con --subnet=${ip}.0/24, así que ${ip}.30 pertenece a esa subred.
+# Evitamos python3 porque en Git Bash/Windows puede apuntar al alias roto de Microsoft Store.
 network_subnet=$(docker network inspect besu-network | jq -r '.[0].IPAM.Config[0].Subnet // empty' 2>/dev/null || true)
-ip_flag=""
 desired_ip="${ip}.30"
-if [[ -n "$network_subnet" ]]; then
-  echo "Red 'besu-network' tiene subred configurada: $network_subnet. Comprobando si la IP deseada $desired_ip pertenece a la subred..."
-  # Usar Python para comprobar pertenencia IP a subred (mÃ¡s fiable que manipular en bash)
-  if command -v python3 >/dev/null 2>&1; then
-    if python3 -c "import ipaddress,sys; sys.exit(0) if ipaddress.ip_address('$desired_ip') in ipaddress.ip_network('$network_subnet') else sys.exit(1)"; then
-      echo "La IP $desired_ip estÃ¡ dentro de $network_subnet. Se usarÃ¡ IP estÃ¡tica para el bootnode."
-      ip_flag="--ip $desired_ip"
-    else
-      echo "La IP $desired_ip NO pertenece a $network_subnet. No se usarÃ¡ --ip; Docker asignarÃ¡ una IP dentro de la subred existente."
-      ip_flag=""
-    fi
-  else
-    echo "Aviso: python3 no encontrado. No puedo comprobar la pertenencia de IP a la subred. No se usarÃ¡ --ip por seguridad."
-    ip_flag=""
-  fi
+if [[ "$network_subnet" == "${ip}.0/24" ]]; then
+  echo "Usando IP estática para bootnode: $desired_ip"
+  ip_flag="--ip $desired_ip"
 else
-  echo "Red 'besu-network' no tiene una subred configurada. Docker asignarÃ¡ la IP automÃ¡ticamente."
+  echo "Subnet inesperada '$network_subnet'; Docker asignará IP automáticamente."
+  ip_flag=""
 fi
 
-docker run -d --name bootnode \
-  -v "$SCRIPT_DIR/config:/opt/besu/config" \
-  -v "$SCRIPT_DIR/QBFT-Network/Node-1/data:/opt/besu/data" \
-  -v "$SCRIPT_DIR/plugins:/opt/besu/plugins" \
+CONFIG_DIR="$(cygpath -m "$SCRIPT_DIR/config")"
+NODE1_DATA_DIR="$(cygpath -m "$SCRIPT_DIR/QBFT-Network/Node-1/data")"
+PLUGINS_DIR="$(cygpath -m "$SCRIPT_DIR/plugins")"
+
+MSYS2_ARG_CONV_EXCL="*" docker run -d --name bootnode \
+  -v "$CONFIG_DIR:/opt/besu/config" \
+  -v "$NODE1_DATA_DIR:/opt/besu/data" \
+  -v "$PLUGINS_DIR:/opt/besu/plugins" \
   -p 30303:30303 \
   -p 8545:8545 \
   -p 9545:9545 \

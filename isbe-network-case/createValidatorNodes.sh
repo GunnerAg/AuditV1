@@ -30,31 +30,24 @@ for ((i = 2; i <= NUM_VALIDATORS; i++)); do
   METRICS_PORT=$((9546 + PORT_OFFSET))
   NODE_IP="$BASE_IP.$((30 + PORT_OFFSET))"
 
-  # Decide whether to pass --ip depending on whether NODE_IP belongs to network_subnet
-  ip_flag=""
-  if [[ -n "$network_subnet" ]]; then
-    if command -v python3 >/dev/null 2>&1; then
-      if python3 -c "import ipaddress,sys; sys.exit(0) if ipaddress.ip_address('$NODE_IP') in ipaddress.ip_network('$network_subnet') else sys.exit(1)"; then
-        ip_flag="--ip $NODE_IP"
-      else
-        echo "Desired IP $NODE_IP does not belong to network subnet $network_subnet; not using --ip for $NODE_NAME."
-        ip_flag=""
-      fi
-    else
-      echo "python3 not available; skipping IP membership check. Not using --ip for $NODE_NAME."
-      ip_flag=""
-    fi
+  # La red se crea con --subnet=$BASE_IP.0/24; evitamos python3 en Git Bash/Windows.
+  if [[ "$network_subnet" == "$BASE_IP.0/24" ]]; then
+    ip_flag="--ip $NODE_IP"
   else
-    echo "Network has no user-configured subnet; not using --ip for $NODE_NAME."
+    echo "Subnet inesperada '$network_subnet'; Docker asignará IP automáticamente para $NODE_NAME."
     ip_flag=""
   fi
 
   echo "Starting $NODE_NAME with desired IP $NODE_IP and ports: P2P=$P2P_PORT, RPC=$RPC_PORT, METRICS=$METRICS_PORT"
 
-  docker run -d --name $NODE_NAME \
-    -v "$(pwd)/config:/opt/besu/config" \
-    -v "$(pwd)/QBFT-Network/Node-$i/data:/opt/besu/data" \
-    -v "$(pwd)/plugins:/opt/besu/plugins" \
+  CONFIG_DIR="$(cygpath -m "$(pwd)/config")"
+  NODE_DATA_DIR="$(cygpath -m "$(pwd)/QBFT-Network/Node-$i/data")"
+  PLUGINS_DIR="$(cygpath -m "$(pwd)/plugins")"
+
+  MSYS2_ARG_CONV_EXCL="*" docker run -d --name $NODE_NAME \
+    -v "$CONFIG_DIR:/opt/besu/config" \
+    -v "$NODE_DATA_DIR:/opt/besu/data" \
+    -v "$PLUGINS_DIR:/opt/besu/plugins" \
     -p $P2P_PORT:$P2P_PORT \
     -p $RPC_PORT:$RPC_PORT \
     -p $METRICS_PORT:$METRICS_PORT \

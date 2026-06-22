@@ -68,7 +68,7 @@ async function deployBusinessLogic(
 ): Promise<{ businessAddress: string; version: string }> {
     console.log('Sending deployBusinessLogic transaction...')
     const data = iface.encodeFunctionData('deploy', [businessId, bytecode])
-    const tx = await signer.sendTransaction({ to: DIAMOND, data, gasLimit: 25_000_000 })
+    const tx = await signer.sendTransaction({ to: DIAMOND, data, gasLimit: 16_000_000 })
     console.log('   Transaction submitted:', tx.hash)
     const receipt = await tx.wait()
     if (!receipt || receipt.status !== 1)
@@ -89,7 +89,7 @@ async function setConfig(
         configId,
         [{ businessId, version: 1 }],
     ])
-    const tx = await signer.sendTransaction({ to: DIAMOND, data, gasLimit: 25_000_000 })
+    const tx = await signer.sendTransaction({ to: DIAMOND, data, gasLimit: 16_000_000 })
     console.log('   Transaction submitted:', tx.hash)
     const receipt = await tx.wait()
     if (!receipt || receipt.status !== 1)
@@ -122,7 +122,7 @@ async function deployUseCase(
         [],     // initBusinessIds
         [],     // initData
     ])
-    const tx = await signer.sendTransaction({ to: DIAMOND, data, gasLimit: 25_000_000 })
+    const tx = await signer.sendTransaction({ to: DIAMOND, data, gasLimit: 16_000_000 })
     console.log('   Transaction submitted:', tx.hash)
     const receipt = await tx.wait()
     if (!receipt || receipt.status !== 1)

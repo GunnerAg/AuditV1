@@ -8,7 +8,7 @@ p2p-port=30303
 rpc-http-enabled=true
 rpc-http-api=["ETH","NET","QBFT","ADMIN"]
 rpc-http-cors-origins=["all"]
-rpc-http-host="127.0.0.1"
+rpc-http-host="0.0.0.0"
 rpc-http-port=8545 
 
 host-allowlist=["*"]

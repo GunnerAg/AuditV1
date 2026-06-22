@@ -1,33 +1,11 @@
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { time } from '@nomicfoundation/hardhat-network-helpers'
-import type {
-    ProjectTestable,
-    AlwaysValidSignatureVerifier,
-    AlwaysInvalidSignatureVerifier,
-    RevertingSignatureVerifier,
-} from '../typechain-types'
+import type { AuditServiceTestWrapper } from '../typechain-types'
 
 // ---------------------------------------------------------------------------
 // Constants matching contracts/constants/constants.sol
 // ---------------------------------------------------------------------------
-
-const DEFAULT_ADMIN_ROLE =
-    '0x0000000000000000000000000000000000000000000000000000000000000000'
-
-const SCHEMA_MANAGER_ROLE = ethers.id(
-    'isbe.customers.ctb.role.audit-service.schema-manager'
-)
-const ALGORITHM_MANAGER_ROLE = ethers.id(
-    'isbe.customers.ctb.role.audit-service.algorithm-manager'
-)
-const KEY_MANAGER_ROLE = ethers.id(
-    'isbe.customers.ctb.role.audit-service.key-manager'
-)
-const KEY_REVOKER_ROLE = ethers.id(
-    'isbe.customers.ctb.role.audit-service.key-revoker'
-)
-const ANCHOR_ROLE = ethers.id('isbe.customers.ctb.role.audit-service.anchor')
 
 const SCHEMA_ID = ethers.id('schema.audit.v1')
 const SCHEMA_VERSION = ethers.id('1.0.0')
@@ -38,9 +16,8 @@ const EIP712_TYPE_HASH = ethers.keccak256(
     )
 )
 
-const ALGO_ALWAYS_OK = ethers.id('algo.always-ok')
-const ALGO_ALWAYS_BAD = ethers.id('algo.always-bad')
-const ALGO_REVERTING = ethers.id('algo.reverting')
+const ECDSA_ALGORITHM_ID = ethers.id('ECDSA_SECP256K1_EIP712')
+const UNSUPPORTED_ALGORITHM_ID = ethers.id('algo.unsupported')
 
 const TENANT_A = ethers.id('tenant.A')
 const TENANT_B = ethers.id('tenant.B')
@@ -48,66 +25,72 @@ const TENANT_B = ethers.id('tenant.B')
 const KEY_A1 = ethers.id('key.A.1')
 const KEY_A2 = ethers.id('key.A.2')
 const KEY_B1 = ethers.id('key.B.1')
-const KEY_A_BAD = ethers.id('key.A.bad')
-const KEY_A_REVERT = ethers.id('key.A.revert')
 
-const SAMPLE_PUBKEY = '0x04' + 'aa'.repeat(64)
-const SAMPLE_SIG = '0x' + 'bb'.repeat(65)
+const DUMMY_SIG = '0x' + 'bb'.repeat(65)
+const MALFORMED_SIG = '0x1234'
 
 const ZERO_BYTES32 =
     '0x0000000000000000000000000000000000000000000000000000000000000000'
+
+const EIP712_DOMAIN_NAME = 'Insurechain Audit Service'
+const EIP712_DOMAIN_VERSION = '1'
+
+const AUDIT_ENVELOPE_TYPES = {
+    AuditEnvelope: [
+        { name: 'eventHash', type: 'bytes32' },
+        { name: 'schemaId', type: 'bytes32' },
+        { name: 'schemaVersion', type: 'bytes32' },
+        { name: 'schemaHash', type: 'bytes32' },
+        { name: 'eip712TypeHash', type: 'bytes32' },
+        { name: 'tenantId', type: 'bytes32' },
+        { name: 'status', type: 'uint8' },
+        { name: 'nonce', type: 'bytes32' },
+    ],
+}
 
 // ---------------------------------------------------------------------------
 // Fixture
 // ---------------------------------------------------------------------------
 
 interface Fixture {
-    project: ProjectTestable
-    validVerifier: AlwaysValidSignatureVerifier
-    invalidVerifier: AlwaysInvalidSignatureVerifier
-    revertingVerifier: RevertingSignatureVerifier
+    project: AuditServiceTestWrapper
     admin: Awaited<ReturnType<typeof ethers.getSigner>>
     operator: Awaited<ReturnType<typeof ethers.getSigner>>
     stranger: Awaited<ReturnType<typeof ethers.getSigner>>
+    signerA1: Awaited<ReturnType<typeof ethers.getSigner>>
+    signerA2: Awaited<ReturnType<typeof ethers.getSigner>>
+    signerB1: Awaited<ReturnType<typeof ethers.getSigner>>
+    wrongSigner: Awaited<ReturnType<typeof ethers.getSigner>>
 }
 
 async function deployFixture(): Promise<Fixture> {
-    const [admin, operator, stranger] = await ethers.getSigners()
-
-    const ProjectTestable = await ethers.getContractFactory('ProjectTestable')
-    const project = (await ProjectTestable.deploy()) as unknown as ProjectTestable
-    await project.waitForDeployment()
-    await (await project.initializeForTest(admin.address, operator.address)).wait()
-
-    const ValidFactory = await ethers.getContractFactory(
-        'AlwaysValidSignatureVerifier'
-    )
-    const validVerifier =
-        (await ValidFactory.deploy()) as unknown as AlwaysValidSignatureVerifier
-    await validVerifier.waitForDeployment()
-
-    const InvalidFactory = await ethers.getContractFactory(
-        'AlwaysInvalidSignatureVerifier'
-    )
-    const invalidVerifier =
-        (await InvalidFactory.deploy()) as unknown as AlwaysInvalidSignatureVerifier
-    await invalidVerifier.waitForDeployment()
-
-    const RevertingFactory = await ethers.getContractFactory(
-        'RevertingSignatureVerifier'
-    )
-    const revertingVerifier =
-        (await RevertingFactory.deploy()) as unknown as RevertingSignatureVerifier
-    await revertingVerifier.waitForDeployment()
-
-    return {
-        project,
-        validVerifier,
-        invalidVerifier,
-        revertingVerifier,
+    const [
         admin,
         operator,
         stranger,
+        signerA1,
+        signerA2,
+        signerB1,
+        wrongSigner,
+    ] = await ethers.getSigners()
+
+    const AuditServiceTestWrapper = await ethers.getContractFactory(
+        'AuditServiceTestWrapper'
+    )
+    const project =
+        (await AuditServiceTestWrapper.deploy()) as unknown as AuditServiceTestWrapper
+    await project.waitForDeployment()
+    await (await project.initializeForTest(admin.address, operator.address)).wait()
+
+    return {
+        project,
+        admin,
+        operator,
+        stranger,
+        signerA1,
+        signerA2,
+        signerB1,
+        wrongSigner,
     }
 }
 
@@ -139,47 +122,86 @@ function makeEnvelope(overrides: Partial<Envelope> = {}): Envelope {
     }
 }
 
+function encodedSignerAddress(address: string): string {
+    return ethers.AbiCoder.defaultAbiCoder().encode(['address'], [address])
+}
+
+function dummySig(keyId: string, sig: string = DUMMY_SIG) {
+    return { keyId, signature: sig }
+}
+
+async function eip712Domain(project: AuditServiceTestWrapper) {
+    const net = await ethers.provider.getNetwork()
+    return {
+        name: EIP712_DOMAIN_NAME,
+        version: EIP712_DOMAIN_VERSION,
+        chainId: net.chainId,
+        verifyingContract: await project.getAddress(),
+    }
+}
+
+function signerForKey(f: Fixture, keyId: string) {
+    if (keyId === KEY_A1) return f.signerA1
+    if (keyId === KEY_A2) return f.signerA2
+    if (keyId === KEY_B1) return f.signerB1
+    throw new Error(`No fixture signer mapped for keyId ${keyId}`)
+}
+
+async function signedSig(
+    f: Fixture,
+    keyId: string,
+    envelope: Envelope,
+    signer = signerForKey(f, keyId)
+) {
+    return {
+        keyId,
+        signature: await signer.signTypedData(
+            await eip712Domain(f.project),
+            AUDIT_ENVELOPE_TYPES,
+            envelope
+        ),
+    }
+}
+
 async function bootstrapHappyPath(
     f: Fixture,
     opts: {
         expiresAt?: bigint
-        registerInvalidAlgo?: boolean
-        registerRevertingAlgo?: boolean
     } = {}
 ) {
     const op = f.project.connect(f.operator)
     await op.registerSchema(SCHEMA_ID, SCHEMA_VERSION, SCHEMA_HASH, EIP712_TYPE_HASH)
-    await op.registerAlgorithm(
-        ALGO_ALWAYS_OK,
-        await f.validVerifier.getAddress()
-    )
-    if (opts.registerInvalidAlgo) {
-        await op.registerAlgorithm(
-            ALGO_ALWAYS_BAD,
-            await f.invalidVerifier.getAddress()
-        )
-    }
-    if (opts.registerRevertingAlgo) {
-        await op.registerAlgorithm(
-            ALGO_REVERTING,
-            await f.revertingVerifier.getAddress()
-        )
-    }
-    const expires = opts.expiresAt ?? 0n
-    await op.registerKey(KEY_A1, ALGO_ALWAYS_OK, SAMPLE_PUBKEY, TENANT_A, expires)
-    await op.registerKey(KEY_A2, ALGO_ALWAYS_OK, SAMPLE_PUBKEY, TENANT_A, expires)
-    await op.registerKey(KEY_B1, ALGO_ALWAYS_OK, SAMPLE_PUBKEY, TENANT_B, expires)
-}
+    await op.registerAlgorithm(ECDSA_ALGORITHM_ID)
 
-function withSig(keyId: string, sig: string = SAMPLE_SIG) {
-    return { keyId, signature: sig }
+    const expires = opts.expiresAt ?? 0n
+    await op.registerKey(
+        KEY_A1,
+        ECDSA_ALGORITHM_ID,
+        encodedSignerAddress(f.signerA1.address),
+        TENANT_A,
+        expires
+    )
+    await op.registerKey(
+        KEY_A2,
+        ECDSA_ALGORITHM_ID,
+        encodedSignerAddress(f.signerA2.address),
+        TENANT_A,
+        expires
+    )
+    await op.registerKey(
+        KEY_B1,
+        ECDSA_ALGORITHM_ID,
+        encodedSignerAddress(f.signerB1.address),
+        TENANT_B,
+        expires
+    )
 }
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('Project (CTB Audit Service V1)', () => {
+describe('AuditService (unified ISBE Diamond facet)', () => {
     describe('Key lifecycle (Milestone 1 — timestamp-based activeness)', () => {
         it('reports active after register', async () => {
             const f = await deployFixture()
@@ -197,26 +219,18 @@ describe('Project (CTB Audit Service V1)', () => {
 
             const tsBeforeRevoke = BigInt(await time.latest())
 
-            // Advance the clock so the revocation timestamp is strictly after
-            // the registration timestamp we captured.
             await time.increase(60)
             const revokeTx = await f.project.connect(f.operator).revokeKey(KEY_A1)
             await revokeTx.wait()
             const revokedAt = BigInt(await time.latest())
 
-            // Audit a historical timestamp before revocation: must remain active.
-            expect(
-                await f.project.isKeyActiveAt(KEY_A1, tsBeforeRevoke)
-            ).to.equal(true)
-
-            // Current time (= revokedAt): not active anymore.
-            expect(
-                await f.project.isKeyActiveAt(KEY_A1, revokedAt)
-            ).to.equal(false)
-            // And a moment after: still not active.
-            expect(
-                await f.project.isKeyActiveAt(KEY_A1, revokedAt + 100n)
-            ).to.equal(false)
+            expect(await f.project.isKeyActiveAt(KEY_A1, tsBeforeRevoke)).to.equal(
+                true
+            )
+            expect(await f.project.isKeyActiveAt(KEY_A1, revokedAt)).to.equal(false)
+            expect(await f.project.isKeyActiveAt(KEY_A1, revokedAt + 100n)).to.equal(
+                false
+            )
             expect(await f.project.isKeyActive(KEY_A1)).to.equal(false)
         })
 
@@ -244,13 +258,16 @@ describe('Project (CTB Audit Service V1)', () => {
                 SCHEMA_HASH,
                 EIP712_TYPE_HASH
             )
-            await op.registerAlgorithm(
-                ALGO_ALWAYS_OK,
-                await f.validVerifier.getAddress()
-            )
+            await op.registerAlgorithm(ECDSA_ALGORITHM_ID)
             const past = BigInt(await time.latest())
             await expect(
-                op.registerKey(KEY_A1, ALGO_ALWAYS_OK, SAMPLE_PUBKEY, TENANT_A, past)
+                op.registerKey(
+                    KEY_A1,
+                    ECDSA_ALGORITHM_ID,
+                    encodedSignerAddress(f.signerA1.address),
+                    TENANT_A,
+                    past
+                )
             ).to.be.revertedWithCustomError(f.project, 'InvalidExpiresAt')
         })
 
@@ -278,9 +295,9 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
 
             const envelope = makeEnvelope()
-            const tx = await f.project
-                .connect(f.operator)
-                .anchor(envelope, [withSig(KEY_A1, '0x' + '11'.repeat(65)), withSig(KEY_A2, '0x' + '22'.repeat(65))])
+            const sig1 = await signedSig(f, KEY_A1, envelope)
+            const sig2 = await signedSig(f, KEY_A2, envelope)
+            const tx = await f.project.connect(f.operator).anchor(envelope, [sig1, sig2])
             await tx.wait()
 
             expect(await f.project.getSignerCount(envelope.eventHash)).to.equal(2n)
@@ -301,13 +318,8 @@ describe('Project (CTB Audit Service V1)', () => {
             const s2 = await f.project.getSigner(envelope.eventHash, KEY_A2)
             expect(s1.keyId).to.equal(KEY_A1)
             expect(s2.keyId).to.equal(KEY_A2)
-            // Commitments are over the raw signature bytes per signer.
-            expect(s1.signatureCommitment).to.equal(
-                ethers.keccak256('0x' + '11'.repeat(65))
-            )
-            expect(s2.signatureCommitment).to.equal(
-                ethers.keccak256('0x' + '22'.repeat(65))
-            )
+            expect(s1.signatureCommitment).to.equal(ethers.keccak256(sig1.signature))
+            expect(s2.signatureCommitment).to.equal(ethers.keccak256(sig2.signature))
         })
 
         it('getSigner reverts SignerNotFound for absent (eventHash, keyId)', async () => {
@@ -316,7 +328,7 @@ describe('Project (CTB Audit Service V1)', () => {
             const envelope = makeEnvelope()
             await f.project
                 .connect(f.operator)
-                .anchor(envelope, [withSig(KEY_A1)])
+                .anchor(envelope, [await signedSig(f, KEY_A1, envelope)])
             await expect(
                 f.project.getSigner(envelope.eventHash, KEY_A2)
             ).to.be.revertedWithCustomError(f.project, 'SignerNotFound')
@@ -326,10 +338,9 @@ describe('Project (CTB Audit Service V1)', () => {
             const f = await deployFixture()
             await bootstrapHappyPath(f)
             const envelope = makeEnvelope()
+            const sig = await signedSig(f, KEY_A1, envelope)
             await expect(
-                f.project
-                    .connect(f.operator)
-                    .anchor(envelope, [withSig(KEY_A1), withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [sig, sig])
             ).to.be.revertedWithCustomError(f.project, 'DuplicateSigner')
         })
     })
@@ -340,7 +351,7 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
             const envelope = makeEnvelope({ tenantId: TENANT_B })
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.revertedWithCustomError(f.project, 'KeyTenantMismatch')
         })
     })
@@ -352,9 +363,11 @@ describe('Project (CTB Audit Service V1)', () => {
             const envelope = makeEnvelope()
             await f.project
                 .connect(f.operator)
-                .anchor(envelope, [withSig(KEY_A1)])
+                .anchor(envelope, [await signedSig(f, KEY_A1, envelope)])
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A2)])
+                f.project
+                    .connect(f.operator)
+                    .anchor(envelope, [await signedSig(f, KEY_A2, envelope)])
             ).to.be.revertedWithCustomError(f.project, 'EventAlreadyAnchored')
         })
     })
@@ -368,7 +381,7 @@ describe('Project (CTB Audit Service V1)', () => {
                 .setSchemaEnabled(SCHEMA_ID, SCHEMA_VERSION, false)
             const envelope = makeEnvelope()
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.revertedWithCustomError(f.project, 'SchemaDisabled')
         })
 
@@ -377,7 +390,7 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
             const envelope = makeEnvelope({ schemaHash: ethers.id('other') })
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.revertedWithCustomError(f.project, 'SchemaHashMismatch')
         })
 
@@ -386,7 +399,7 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
             const envelope = makeEnvelope({ eip712TypeHash: ethers.id('other') })
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.revertedWithCustomError(f.project, 'Eip712TypeHashMismatch')
         })
 
@@ -395,10 +408,10 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
             await f.project
                 .connect(f.operator)
-                .setAlgorithmEnabled(ALGO_ALWAYS_OK, false)
+                .setAlgorithmEnabled(ECDSA_ALGORITHM_ID, false)
             const envelope = makeEnvelope()
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.revertedWithCustomError(f.project, 'AlgorithmDisabled')
         })
 
@@ -409,7 +422,7 @@ describe('Project (CTB Audit Service V1)', () => {
             await expect(
                 f.project
                     .connect(f.operator)
-                    .anchor(envelope, [withSig(ethers.id('unknown'))])
+                    .anchor(envelope, [dummySig(ethers.id('unknown'))])
             ).to.be.revertedWithCustomError(f.project, 'KeyNotRegistered')
         })
 
@@ -425,45 +438,38 @@ describe('Project (CTB Audit Service V1)', () => {
             await expect(
                 op.registerKey(
                     KEY_A1,
-                    ethers.id('algo.unknown'),
-                    SAMPLE_PUBKEY,
+                    UNSUPPORTED_ALGORITHM_ID,
+                    encodedSignerAddress(f.signerA1.address),
                     TENANT_A,
                     0n
                 )
             ).to.be.revertedWithCustomError(f.project, 'AlgorithmNotRegistered')
         })
 
-        it('registering an algorithm with address zero reverts InvalidVerifierAddress', async () => {
+        it('registering an unsupported algorithm reverts UnsupportedAlgorithm', async () => {
             const f = await deployFixture()
-            const op = f.project.connect(f.operator)
-
             await expect(
-                op.registerAlgorithm(ALGO_ALWAYS_OK, ethers.ZeroAddress)
-            ).to.be.revertedWithCustomError(f.project, 'InvalidVerifierAddress')
+                f.project.connect(f.operator).registerAlgorithm(UNSUPPORTED_ALGORITHM_ID)
+            ).to.be.revertedWithCustomError(f.project, 'UnsupportedAlgorithm')
         })
 
-        it('registering an algorithm with an EOA verifier reverts InvalidVerifierAddress', async () => {
+        it('registering a zero algorithm id reverts InvalidAlgorithmId', async () => {
             const f = await deployFixture()
-            const op = f.project.connect(f.operator)
-
             await expect(
-                op.registerAlgorithm(ALGO_ALWAYS_OK, f.stranger.address)
-            ).to.be.revertedWithCustomError(f.project, 'InvalidVerifierAddress')
+                f.project.connect(f.operator).registerAlgorithm(ZERO_BYTES32)
+            ).to.be.revertedWithCustomError(f.project, 'InvalidAlgorithmId')
         })
 
         it('registering a key against a disabled algorithm reverts AlgorithmDisabled', async () => {
             const f = await deployFixture()
             const op = f.project.connect(f.operator)
-            await op.registerAlgorithm(
-                ALGO_ALWAYS_OK,
-                await f.validVerifier.getAddress()
-            )
-            await op.setAlgorithmEnabled(ALGO_ALWAYS_OK, false)
+            await op.registerAlgorithm(ECDSA_ALGORITHM_ID)
+            await op.setAlgorithmEnabled(ECDSA_ALGORITHM_ID, false)
             await expect(
                 op.registerKey(
                     KEY_A1,
-                    ALGO_ALWAYS_OK,
-                    SAMPLE_PUBKEY,
+                    ECDSA_ALGORITHM_ID,
+                    encodedSignerAddress(f.signerA1.address),
                     TENANT_A,
                     0n
                 )
@@ -492,15 +498,9 @@ describe('Project (CTB Audit Service V1)', () => {
         it('registering a duplicate algorithm reverts AlgorithmAlreadyRegistered', async () => {
             const f = await deployFixture()
             const op = f.project.connect(f.operator)
-            await op.registerAlgorithm(
-                ALGO_ALWAYS_OK,
-                await f.validVerifier.getAddress()
-            )
+            await op.registerAlgorithm(ECDSA_ALGORITHM_ID)
             await expect(
-                op.registerAlgorithm(
-                    ALGO_ALWAYS_OK,
-                    await f.validVerifier.getAddress()
-                )
+                op.registerAlgorithm(ECDSA_ALGORITHM_ID)
             ).to.be.revertedWithCustomError(f.project, 'AlgorithmAlreadyRegistered')
         })
     })
@@ -511,7 +511,7 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
             const envelope = makeEnvelope({ eventHash: ZERO_BYTES32 })
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.revertedWithCustomError(f.project, 'InvalidEventHash')
         })
 
@@ -520,7 +520,7 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
             const envelope = makeEnvelope({ nonce: ZERO_BYTES32 })
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.revertedWithCustomError(f.project, 'InvalidNonce')
         })
 
@@ -529,7 +529,7 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
             const envelope = makeEnvelope({ schemaHash: ZERO_BYTES32 })
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.revertedWithCustomError(f.project, 'InvalidSchemaHash')
         })
 
@@ -538,7 +538,7 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
             const envelope = makeEnvelope({ eip712TypeHash: ZERO_BYTES32 })
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.revertedWithCustomError(f.project, 'InvalidEip712TypeHash')
         })
 
@@ -547,7 +547,7 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
             const envelope = makeEnvelope({ tenantId: ZERO_BYTES32 })
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.revertedWithCustomError(f.project, 'InvalidTenantId')
         })
 
@@ -570,7 +570,7 @@ describe('Project (CTB Audit Service V1)', () => {
                 makeEnvelope({ nonce: ZERO_BYTES32 }),
             ]) {
                 expect(
-                    await f.project.verifySignature(malformed, withSig(KEY_A1))
+                    await f.project.verifySignature(malformed, dummySig(KEY_A1))
                 ).to.equal(false)
             }
         })
@@ -585,26 +585,11 @@ describe('Project (CTB Audit Service V1)', () => {
             const d2 = await f.project.hashEnvelope(envelope)
             expect(d1).to.equal(d2)
 
-            const net = await ethers.provider.getNetwork()
-            const domain = {
-                name: 'CTB Audit Service',
-                version: '1',
-                chainId: Number(net.chainId),
-                verifyingContract: await f.project.getAddress(),
-            }
-            const types = {
-                AuditEnvelope: [
-                    { name: 'eventHash', type: 'bytes32' },
-                    { name: 'schemaId', type: 'bytes32' },
-                    { name: 'schemaVersion', type: 'bytes32' },
-                    { name: 'schemaHash', type: 'bytes32' },
-                    { name: 'eip712TypeHash', type: 'bytes32' },
-                    { name: 'tenantId', type: 'bytes32' },
-                    { name: 'status', type: 'uint8' },
-                    { name: 'nonce', type: 'bytes32' },
-                ],
-            }
-            const offchain = ethers.TypedDataEncoder.hash(domain, types, envelope)
+            const offchain = ethers.TypedDataEncoder.hash(
+                await eip712Domain(f.project),
+                AUDIT_ENVELOPE_TYPES,
+                envelope
+            )
             expect(d1).to.equal(offchain)
         })
 
@@ -612,11 +597,11 @@ describe('Project (CTB Audit Service V1)', () => {
             const f = await deployFixture()
             await bootstrapHappyPath(f)
 
-            const ProjectTestableFactory = await ethers.getContractFactory(
-                'ProjectTestable'
+            const AuditServiceTestWrapper = await ethers.getContractFactory(
+                'AuditServiceTestWrapper'
             )
             const other =
-                (await ProjectTestableFactory.deploy()) as unknown as ProjectTestable
+                (await AuditServiceTestWrapper.deploy()) as unknown as AuditServiceTestWrapper
             await other.waitForDeployment()
             await (
                 await other.initializeForTest(f.admin.address, f.operator.address)
@@ -638,67 +623,42 @@ describe('Project (CTB Audit Service V1)', () => {
             expect(d1).to.not.equal(d2)
         })
 
-        it('always-valid mock causes verifySignature to return true and anchor to succeed', async () => {
+        it('valid native ECDSA signature makes verifySignature true and anchor succeed', async () => {
             const f = await deployFixture()
             await bootstrapHappyPath(f)
             const envelope = makeEnvelope()
-            expect(
-                await f.project.verifySignature(envelope, withSig(KEY_A1))
-            ).to.equal(true)
+            const sig = await signedSig(f, KEY_A1, envelope)
+            expect(await f.project.verifySignature(envelope, sig)).to.equal(true)
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [sig])
             ).to.emit(f.project, 'AuditAnchored')
         })
 
-        it('always-invalid mock makes verifySignature return false and anchor revert InvalidSignature', async () => {
+        it('wrong ECDSA signer makes verifySignature false and anchor revert InvalidSignature', async () => {
             const f = await deployFixture()
-            await bootstrapHappyPath(f, { registerInvalidAlgo: true })
-            await f.project
-                .connect(f.operator)
-                .registerKey(
-                    KEY_A_BAD,
-                    ALGO_ALWAYS_BAD,
-                    SAMPLE_PUBKEY,
-                    TENANT_A,
-                    0n
-                )
+            await bootstrapHappyPath(f)
             const envelope = makeEnvelope({ eventHash: ethers.id('event.bad') })
+            const sig = await signedSig(f, KEY_A1, envelope, f.wrongSigner)
 
-            expect(
-                await f.project.verifySignature(envelope, withSig(KEY_A_BAD))
-            ).to.equal(false)
+            expect(await f.project.verifySignature(envelope, sig)).to.equal(false)
 
             await expect(
-                f.project
-                    .connect(f.operator)
-                    .anchor(envelope, [withSig(KEY_A_BAD)])
+                f.project.connect(f.operator).anchor(envelope, [sig])
             ).to.be.revertedWithCustomError(f.project, 'InvalidSignature')
 
             expect(await f.project.exists(envelope.eventHash)).to.equal(false)
         })
 
-        it('reverting mock makes verifySignature return false and anchor revert InvalidSignature', async () => {
+        it('malformed ECDSA signature makes verifySignature false and anchor revert InvalidSignature', async () => {
             const f = await deployFixture()
-            await bootstrapHappyPath(f, { registerRevertingAlgo: true })
-            await f.project
-                .connect(f.operator)
-                .registerKey(
-                    KEY_A_REVERT,
-                    ALGO_REVERTING,
-                    SAMPLE_PUBKEY,
-                    TENANT_A,
-                    0n
-                )
-            const envelope = makeEnvelope({ eventHash: ethers.id('event.revert') })
+            await bootstrapHappyPath(f)
+            const envelope = makeEnvelope({ eventHash: ethers.id('event.malformed') })
+            const sig = dummySig(KEY_A1, MALFORMED_SIG)
 
-            expect(
-                await f.project.verifySignature(envelope, withSig(KEY_A_REVERT))
-            ).to.equal(false)
+            expect(await f.project.verifySignature(envelope, sig)).to.equal(false)
 
             await expect(
-                f.project
-                    .connect(f.operator)
-                    .anchor(envelope, [withSig(KEY_A_REVERT)])
+                f.project.connect(f.operator).anchor(envelope, [sig])
             ).to.be.revertedWithCustomError(f.project, 'InvalidSignature')
 
             expect(await f.project.exists(envelope.eventHash)).to.equal(false)
@@ -706,21 +666,11 @@ describe('Project (CTB Audit Service V1)', () => {
 
         it('verifySignatures returns per-signature booleans', async () => {
             const f = await deployFixture()
-            await bootstrapHappyPath(f, { registerInvalidAlgo: true })
-            await f.project
-                .connect(f.operator)
-                .registerKey(
-                    KEY_A_BAD,
-                    ALGO_ALWAYS_BAD,
-                    SAMPLE_PUBKEY,
-                    TENANT_A,
-                    0n
-                )
+            await bootstrapHappyPath(f)
             const envelope = makeEnvelope()
-            const results = await f.project.verifySignatures(envelope, [
-                withSig(KEY_A1),
-                withSig(KEY_A_BAD),
-            ])
+            const valid = await signedSig(f, KEY_A1, envelope)
+            const invalid = await signedSig(f, KEY_A2, envelope, f.wrongSigner)
+            const results = await f.project.verifySignatures(envelope, [valid, invalid])
             expect(results[0]).to.equal(true)
             expect(results[1]).to.equal(false)
         })
@@ -732,13 +682,11 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
             await f.project.pauseForTest()
 
-            // anchor
             const envelope = makeEnvelope()
             await expect(
-                f.project.connect(f.operator).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.operator).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.reverted
 
-            // registerSchema
             await expect(
                 f.project
                     .connect(f.operator)
@@ -750,7 +698,6 @@ describe('Project (CTB Audit Service V1)', () => {
                     )
             ).to.be.reverted
 
-            // revokeKey
             await expect(
                 f.project.connect(f.operator).revokeKey(KEY_A1)
             ).to.be.reverted
@@ -760,7 +707,6 @@ describe('Project (CTB Audit Service V1)', () => {
             const f = await deployFixture()
             await bootstrapHappyPath(f)
             await f.project.pauseForTest()
-            // Views must not revert because of pause.
             expect(await f.project.isKeyActive(KEY_A1)).to.equal(true)
             expect(await f.project.exists(ethers.id('event.none'))).to.equal(false)
         })
@@ -784,12 +730,7 @@ describe('Project (CTB Audit Service V1)', () => {
         it('registerAlgorithm requires ALGORITHM_MANAGER_ROLE', async () => {
             const f = await deployFixture()
             await expect(
-                f.project
-                    .connect(f.stranger)
-                    .registerAlgorithm(
-                        ALGO_ALWAYS_OK,
-                        await f.validVerifier.getAddress()
-                    )
+                f.project.connect(f.stranger).registerAlgorithm(ECDSA_ALGORITHM_ID)
             ).to.be.reverted
         })
 
@@ -801,8 +742,8 @@ describe('Project (CTB Audit Service V1)', () => {
                     .connect(f.stranger)
                     .registerKey(
                         ethers.id('key.x'),
-                        ALGO_ALWAYS_OK,
-                        SAMPLE_PUBKEY,
+                        ECDSA_ALGORITHM_ID,
+                        encodedSignerAddress(f.signerA1.address),
                         TENANT_A,
                         0n
                     )
@@ -822,7 +763,7 @@ describe('Project (CTB Audit Service V1)', () => {
             await bootstrapHappyPath(f)
             const envelope = makeEnvelope()
             await expect(
-                f.project.connect(f.stranger).anchor(envelope, [withSig(KEY_A1)])
+                f.project.connect(f.stranger).anchor(envelope, [dummySig(KEY_A1)])
             ).to.be.reverted
         })
 
@@ -837,7 +778,7 @@ describe('Project (CTB Audit Service V1)', () => {
             await expect(
                 f.project
                     .connect(f.stranger)
-                    .setAlgorithmEnabled(ALGO_ALWAYS_OK, false)
+                    .setAlgorithmEnabled(ECDSA_ALGORITHM_ID, false)
             ).to.be.reverted
         })
     })
@@ -845,18 +786,15 @@ describe('Project (CTB Audit Service V1)', () => {
     describe('Metadata', () => {
         it('version() returns the EIP-712 domain version constant', async () => {
             const f = await deployFixture()
-            expect(await f.project.version()).to.equal('1')
+            expect(await f.project.version()).to.equal(EIP712_DOMAIN_VERSION)
         })
 
         it('eip712Domain returns name, version and verifyingContract', async () => {
             const f = await deployFixture()
-            // Solidity override of eip712Domain renames the `version` return
-            // to `version_` to avoid shadowing the `version()` function; the
-            // ABI reflects that name.
             const [, name, version_, , verifyingContract] =
                 await f.project.eip712Domain()
-            expect(name).to.equal('CTB Audit Service')
-            expect(version_).to.equal('1')
+            expect(name).to.equal(EIP712_DOMAIN_NAME)
+            expect(version_).to.equal(EIP712_DOMAIN_VERSION)
             expect(verifyingContract).to.equal(await f.project.getAddress())
         })
     })
