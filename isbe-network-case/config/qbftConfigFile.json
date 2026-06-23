@@ -732,7 +732,7 @@
     "nodes": {
       "generate": true,
       "count": 4,
-      "besuVersion": "26.6.0-RC1",
+      "besuVersion": "latest",
       "ip": "172.16.240"
     }
   }
